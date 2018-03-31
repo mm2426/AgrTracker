@@ -16,7 +16,7 @@
       arm_target_device_name="nRF52832_xxAA"
       arm_target_interface_type="SWD"
       c_preprocessor_definitions="BOARD_AGRILINX_BL652;BSP_DEFINES_ONLY;CONFIG_GPIO_AS_PINRESET;FLOAT_ABI_HARD;INITIALIZE_USER_SECTIONS;NO_VTOR_CONFIG;NRF52;NRF52832_XXAA;NRF52_PAN_74;NRF_SD_BLE_API_VERSION=5;S132;SOFTDEVICE_PRESENT"
-      c_user_include_directories="../../../config;../../../../../../components;../../../../../../components/boards;../../../../../../components/device;../../../../../../components/drivers_nrf/common;../../../../../../components/drivers_nrf/delay;../../../../../../components/drivers_nrf/hal;../../../../../../components/drivers_nrf/uart;../../../../../../components/drivers_nrf/clock;../../../../../../components/drivers_nrf/rtc;../../../../../../components/drivers_nrf/gpiote;../../../../../../components/drivers_nrf/ppi;../../../../../../components/libraries/balloc;../../../../../../components/libraries/bsp;../../../../../../components/libraries/experimental_log;../../../../../../components/libraries/experimental_log/src;../../../../../../components/libraries/experimental_memobj;../../../../../../components/libraries/experimental_section_vars;../../../../../../components/libraries/fifo;../../../../../../components/libraries/uart;../../../../../../components/libraries/strerror;../../../../../../components/libraries/util;../../../../../../components/softdevice/common;../../../../../../components/softdevice/s132/headers;../../../../../../components/softdevice/s132/headers/nrf52;../../../../../../components/toolchain;../../../../../../components/toolchain/cmsis/include;../../..;../config;../../../ifc_lib/inc"
+      c_user_include_directories="../../../config;../../../../../../components;../../../../../../components/boards;../../../../../../components/device;../../../../../../components/drivers_nrf/common;../../../../../../components/drivers_nrf/delay;../../../../../../components/drivers_nrf/hal;../../../../../../components/drivers_nrf/uart;../../../../../../components/drivers_nrf/twi_master;../../../../../../components/drivers_nrf/clock;../../../../../../components/drivers_nrf/rtc;../../../../../../components/drivers_nrf/gpiote;../../../../../../components/drivers_nrf/ppi;../../../../../../components/libraries/balloc;../../../../../../components/libraries/bsp;../../../../../../components/libraries/experimental_log;../../../../../../components/libraries/experimental_log/src;../../../../../../components/libraries/experimental_memobj;../../../../../../components/libraries/experimental_section_vars;../../../../../../components/libraries/fifo;../../../../../../components/libraries/uart;../../../../../../components/libraries/strerror;../../../../../../components/libraries/util;../../../../../../components/softdevice/common;../../../../../../components/softdevice/s132/headers;../../../../../../components/softdevice/s132/headers/nrf52;../../../../../../components/toolchain;../../../../../../components/toolchain/cmsis/include;../../..;../config;../../../ifc_lib/inc;../../../peripheral_drivers/inc"
       debug_additional_load_file="../../../../../../components/softdevice/s132/hex/s132_nrf52_5.0.0_softdevice.hex"
       debug_register_definition_file="../../../../../../svd/nrf52.svd"
       debug_start_from_entry_point_symbol="No"
@@ -76,6 +76,15 @@
       <file file_name="../../../../../../components/drivers_nrf/rtc/nrf_drv_rtc.c" />
       <file file_name="../../../../../../components/drivers_nrf/gpiote/nrf_drv_gpiote.c" />
       <file file_name="../../../../../../components/drivers_nrf/ppi/nrf_drv_ppi.c" />
+      <file file_name="../../../../../../components/drivers_nrf/twi_master/nrf_drv_twi.c" />
+    </folder>
+    <folder Name="peripheral_drivers">
+      <folder
+        Name="src"
+        exclude=""
+        filter=""
+        path="../../../peripheral_drivers/src"
+        recurse="No" />
     </folder>
   </project>
   <configuration

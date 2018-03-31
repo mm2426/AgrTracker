@@ -55,6 +55,7 @@
 #include <stdint.h>
 #include "nrf_delay.h"
 #include "nrf_drv_uart.h"
+#include "nrf_drv_twi.h"
 #include "nrf_drv_clock.h"
 #include "nrf_drv_rtc.h"
 #include "nrf_drv_gpiote.h"
@@ -64,6 +65,7 @@
 #include "ll_ifc_consts.h"
 #include "ll_ifc_symphony.h"
 #include "ll_ifc_transport_mcu.h"
+#include "ubloxm8.h"
 
 /** Symphony link comm states
 */
@@ -104,6 +106,10 @@ void RTC1Init(void);
  */
 void SlIrqInit(void);
 
+/** @brief Function to initialize TWI Master
+ */
+void TWIM1Init(void);
+
 /** @brief Lora Rx interrupt handler
  */
 void SlIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
@@ -117,8 +123,12 @@ void SlProcessComm(void);
 enum sl_states_t slCommState = SL_RESET;
 enum sl_states_t slCommNextState = SL_RESET;
 
-/**< Declaring an instance of nrf_drv_rtc for RTC1. */
+/**< Declaring an instance of RTC1 Peripheral. */
 const nrf_drv_rtc_t rtc1 = NRF_DRV_RTC_INSTANCE(1);
+
+/* Declaring an instance of TWIM1 Peripheral. */
+static const nrf_drv_twi_t twim1 = NRF_DRV_TWI_INSTANCE(1);
+
 
 uint8_t rtcExpired = 0;
 uint8_t slBuffer[SL_BUFFER_LEN], rxIrq = 0;
@@ -133,20 +143,24 @@ int main(void)
 {
     enum app_states_t appState = APP_READY;
     uint32_t irqFlags;
+    uint8_t gpsData[100];
     
     enum ll_state loraState;
     enum ll_tx_state txState;
     enum ll_rx_state rxState;
      
-
     /* Configure board. */
     InitPeripherals();
     
-//    while (true)
-//    {
-//        SlProcessComm();
-//        nrf_delay_ms(200);
-//    }
+    while(1)
+    {
+        ReadGPSRaw(gpsData);
+        if(gpsData[0] == '$')
+        {
+            nrf_delay_ms(1);
+        }
+        nrf_delay_ms(1000);
+    }
 
     while (true)
     {
@@ -219,6 +233,11 @@ static void rtc_handler(nrf_drv_rtc_int_type_t int_type)
     }
 }
 
+void SlIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+{
+    rxIrq = 1;
+}
+
 void InitPeripherals(void)
 {
     bsp_board_leds_init();
@@ -226,13 +245,15 @@ void InitPeripherals(void)
     RTC1Init();
     ll_uart_init();
     SlIrqInit();
+    TWIM1Init();
+    
+    //Set GPS Packet Filters
+    SetGNRMCFilter();
 
     //SPI Init
-    //TWI Init
-    
+
     //Init Accelerometer
     //Init GPS
-    //Init LORA
 
     //Init All LEDs & GPIOS
     
@@ -276,9 +297,18 @@ void SlIrqInit(void)
     nrf_drv_gpiote_in_event_enable(WAKE_STS_PIN, true);
 }
 
-void SlIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+void TWIM1Init(void)
 {
-    rxIrq = 1;
+    ret_code_t err_code;
+
+    nrf_drv_twi_config_t config = NRF_DRV_TWI_DEFAULT_CONFIG;
+    config.scl = SCL1_PIN;
+    config.sda = SDA1_PIN;
+    
+    err_code = nrf_drv_twi_init(&twim1, &config, NULL, NULL);
+    APP_ERROR_CHECK(err_code);
+
+    nrf_drv_twi_enable(&twim1);
 }
 
 void SlProcessComm(void)

@@ -26,21 +26,24 @@ Output/agrilinx_tracker\ Debug/Obj/main.o: \
  d:\nrf5_sdk14\components\libraries\util\sdk_errors.h \
  d:\nrf5_sdk14\components\softdevice\s132\headers\nrf_error.h \
  ../config/sdk_config.h \
+ d:\nrf5_sdk14\components\drivers_nrf\twi_master\nrf_drv_twi.h \
+ d:\nrf5_sdk14\components\libraries\util\sdk_common.h \
+ C:/Program\ Files/SEGGER/SEGGER\ Embedded\ Studio\ for\ ARM\ 3.34/include/string.h \
+ d:\nrf5_sdk14\components\libraries\util\nordic_common.h \
+ d:\nrf5_sdk14\components\device\compiler_abstraction.h \
+ d:\nrf5_sdk14\components\libraries\util\sdk_os.h \
+ d:\nrf5_sdk14\components\libraries\util\sdk_errors.h \
+ d:\nrf5_sdk14\components\libraries\util\app_util.h \
+ d:\nrf5_sdk14\components\libraries\util\sdk_macros.h \
+ d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_twi.h \
+ d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_twim.h \
  d:\nrf5_sdk14\components\drivers_nrf\clock\nrf_drv_clock.h \
  d:\nrf5_sdk14\components\libraries\util\nrf_assert.h \
  d:\nrf5_sdk14\components\libraries\util\app_error.h \
  C:/Program\ Files/SEGGER/SEGGER\ Embedded\ Studio\ for\ ARM\ 3.34/include/stdio.h \
- d:\nrf5_sdk14\components\libraries\util\sdk_errors.h \
- d:\nrf5_sdk14\components\libraries\util\nordic_common.h \
  d:\nrf5_sdk14\components\libraries\util\app_error_weak.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_clock.h \
  d:\nrf5_sdk14\components\drivers_nrf\common\nrf_drv_common.h \
- d:\nrf5_sdk14\components\libraries\util\sdk_common.h \
- C:/Program\ Files/SEGGER/SEGGER\ Embedded\ Studio\ for\ ARM\ 3.34/include/string.h \
- d:\nrf5_sdk14\components\device\compiler_abstraction.h \
- d:\nrf5_sdk14\components\libraries\util\sdk_os.h \
- d:\nrf5_sdk14\components\libraries\util\app_util.h \
- d:\nrf5_sdk14\components\libraries\util\sdk_macros.h \
  d:\nrf5_sdk14\components\drivers_nrf\rtc\nrf_drv_rtc.h \
  d:\nrf5_sdk14\components\libraries\util\nordic_common.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_rtc.h \
@@ -61,4 +64,5 @@ Output/agrilinx_tracker\ Debug/Obj/main.o: \
  C:/Program\ Files/SEGGER/SEGGER\ Embedded\ Studio\ for\ ARM\ 3.34/include/sys/time.h \
  ../../../ifc_lib/inc/ll_ifc_consts.h \
  ../../../ifc_lib/inc/ifc_struct_defs.h \
- ../../../ifc_lib/inc/ll_ifc_transport_mcu.h
+ ../../../ifc_lib/inc/ll_ifc_transport_mcu.h \
+ ../../../peripheral_drivers/inc/ubloxm8.h
