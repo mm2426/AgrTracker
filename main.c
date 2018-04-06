@@ -66,6 +66,8 @@
 #include "ll_ifc_symphony.h"
 #include "ll_ifc_transport_mcu.h"
 #include "ubloxm8.h"
+#include "lis3dshtr.h"
+#include "mcp7940m.h"
 
 /** Symphony link comm states
 */
@@ -127,8 +129,7 @@ enum sl_states_t slCommNextState = SL_RESET;
 const nrf_drv_rtc_t rtc1 = NRF_DRV_RTC_INSTANCE(1);
 
 /* Declaring an instance of TWIM1 Peripheral. */
-static const nrf_drv_twi_t twim1 = NRF_DRV_TWI_INSTANCE(1);
-
+static const nrf_drv_twi_t twim1 = NRF_DRV_TWI_INSTANCE(BOARD_TWI);
 
 uint8_t rtcExpired = 0;
 uint8_t slBuffer[SL_BUFFER_LEN], rxIrq = 0;
@@ -144,6 +145,7 @@ int main(void)
     enum app_states_t appState = APP_READY;
     uint32_t irqFlags;
     uint8_t gpsData[100];
+    uint16_t accData[3];
     
     enum ll_state loraState;
     enum ll_tx_state txState;
@@ -151,6 +153,12 @@ int main(void)
      
     /* Configure board. */
     InitPeripherals();
+
+    while(true)
+    {
+        LIS3DReadAccDataAll(ADDR_LIS3DSHTR, accData);
+        nrf_delay_ms(1000);
+    }
     
     while(1)
     {
@@ -253,6 +261,8 @@ void InitPeripherals(void)
     //SPI Init
 
     //Init Accelerometer
+    LIS3DInit(ADDR_LIS3DSHTR);
+
     //Init GPS
 
     //Init All LEDs & GPIOS

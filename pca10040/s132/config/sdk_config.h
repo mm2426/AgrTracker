@@ -680,6 +680,8 @@
 #define TWIM_NRF52_ANOMALY_109_WORKAROUND_ENABLED 0
 #endif
 
+#define BOARD_TWI     1
+
 // </e>
 
 //==========================================================

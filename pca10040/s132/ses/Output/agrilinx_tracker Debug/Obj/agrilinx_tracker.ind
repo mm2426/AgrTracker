@@ -28,6 +28,8 @@
 "Output/agrilinx_tracker Debug/Obj/nrf_drv_gpiote.o"
 "Output/agrilinx_tracker Debug/Obj/nrf_drv_ppi.o"
 "Output/agrilinx_tracker Debug/Obj/nrf_drv_twi.o"
+"Output/agrilinx_tracker Debug/Obj/lis3dshtr.o"
+"Output/agrilinx_tracker Debug/Obj/mcp7940m.o"
 "Output/agrilinx_tracker Debug/Obj/ubloxm8.o"
 "C:/Program Files/SEGGER/SEGGER Embedded Studio for ARM 3.34/lib/libdebugio_mempoll_v7em_fpv4_sp_d16_hard_t_le_eabi.a"
 "C:/Program Files/SEGGER/SEGGER Embedded Studio for ARM 3.34/lib/libm_v7em_fpv4_sp_d16_hard_t_le_eabi.a"

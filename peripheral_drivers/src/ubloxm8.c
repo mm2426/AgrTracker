@@ -1,7 +1,7 @@
 #include "ubloxm8.h"
 
 /* Declaring an instance of TWIM1 Peripheral. */
-static const nrf_drv_twi_t twim1 = NRF_DRV_TWI_INSTANCE(1);
+static const nrf_drv_twi_t twim1 = NRF_DRV_TWI_INSTANCE(BOARD_TWI);
 
 void SetGNRMCFilter(void)
 {

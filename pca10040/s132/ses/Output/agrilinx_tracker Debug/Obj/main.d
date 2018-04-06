@@ -65,4 +65,6 @@ Output/agrilinx_tracker\ Debug/Obj/main.o: \
  ../../../ifc_lib/inc/ll_ifc_consts.h \
  ../../../ifc_lib/inc/ifc_struct_defs.h \
  ../../../ifc_lib/inc/ll_ifc_transport_mcu.h \
- ../../../peripheral_drivers/inc/ubloxm8.h
+ ../../../peripheral_drivers/inc/ubloxm8.h \
+ ../../../peripheral_drivers/inc/lis3dshtr.h \
+ ../../../peripheral_drivers/inc/mcp7940m.h
