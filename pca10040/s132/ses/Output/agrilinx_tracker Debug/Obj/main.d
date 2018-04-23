@@ -37,6 +37,10 @@ Output/agrilinx_tracker\ Debug/Obj/main.o: \
  d:\nrf5_sdk14\components\libraries\util\sdk_macros.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_twi.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_twim.h \
+ d:\nrf5_sdk14\components\drivers_nrf\spi_master\nrf_drv_spi.h \
+ d:\nrf5_sdk14\components\libraries\util\nordic_common.h \
+ d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_spi.h \
+ d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_spim.h \
  d:\nrf5_sdk14\components\drivers_nrf\clock\nrf_drv_clock.h \
  d:\nrf5_sdk14\components\libraries\util\nrf_assert.h \
  d:\nrf5_sdk14\components\libraries\util\app_error.h \
@@ -45,7 +49,6 @@ Output/agrilinx_tracker\ Debug/Obj/main.o: \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_clock.h \
  d:\nrf5_sdk14\components\drivers_nrf\common\nrf_drv_common.h \
  d:\nrf5_sdk14\components\drivers_nrf\rtc\nrf_drv_rtc.h \
- d:\nrf5_sdk14\components\libraries\util\nordic_common.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_rtc.h \
  d:\nrf5_sdk14\components\drivers_nrf\gpiote\nrf_drv_gpiote.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_gpiote.h \
@@ -67,4 +70,5 @@ Output/agrilinx_tracker\ Debug/Obj/main.o: \
  ../../../ifc_lib/inc/ll_ifc_transport_mcu.h \
  ../../../peripheral_drivers/inc/ubloxm8.h \
  ../../../peripheral_drivers/inc/lis3dshtr.h \
- ../../../peripheral_drivers/inc/mcp7940m.h
+ ../../../peripheral_drivers/inc/mcp7940m.h \
+ ../../../peripheral_drivers/inc/w25q32.h

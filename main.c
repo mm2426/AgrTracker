@@ -56,6 +56,7 @@
 #include "nrf_delay.h"
 #include "nrf_drv_uart.h"
 #include "nrf_drv_twi.h"
+#include "nrf_drv_spi.h"
 #include "nrf_drv_clock.h"
 #include "nrf_drv_rtc.h"
 #include "nrf_drv_gpiote.h"
@@ -68,6 +69,7 @@
 #include "ubloxm8.h"
 #include "lis3dshtr.h"
 #include "mcp7940m.h"
+#include "w25q32.h"
 
 /** Symphony link comm states
 */
@@ -112,6 +114,10 @@ void SlIrqInit(void);
  */
 void TWIM1Init(void);
 
+/** @brief Function to initialize SPI Master
+ */
+void SPIM0Init(void);
+
 /** @brief Lora Rx interrupt handler
  */
 void SlIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
@@ -130,6 +136,9 @@ const nrf_drv_rtc_t rtc1 = NRF_DRV_RTC_INSTANCE(1);
 
 /* Declaring an instance of TWIM1 Peripheral. */
 static const nrf_drv_twi_t twim1 = NRF_DRV_TWI_INSTANCE(BOARD_TWI);
+
+/* Declaring an instance of SPIM0 Peripheral. */
+static const nrf_drv_spi_t spim0 = NRF_DRV_SPI_INSTANCE(BOARD_SPI);
 
 uint8_t rtcExpired = 0;
 uint8_t slBuffer[SL_BUFFER_LEN], rxIrq = 0;
@@ -154,6 +163,18 @@ int main(void)
     /* Configure board. */
     InitPeripherals();
 
+    while(true)
+    {
+        nrf_gpio_pin_set(LEDR_PIN);
+        nrf_gpio_pin_set(LEDG_PIN);
+        nrf_gpio_pin_set(LEDB_PIN);
+        nrf_delay_ms(500);
+        nrf_gpio_pin_clear(LEDR_PIN);
+        nrf_gpio_pin_clear(LEDG_PIN);
+        nrf_gpio_pin_clear(LEDB_PIN);
+        nrf_delay_ms(500);
+    }
+    
     while(true)
     {
         LIS3DReadAccDataAll(ADDR_LIS3DSHTR, accData);
@@ -254,21 +275,27 @@ void InitPeripherals(void)
     ll_uart_init();
     SlIrqInit();
     TWIM1Init();
-    
-    //Set GPS Packet Filters
-    SetGNRMCFilter();
+    SPIM0Init();
 
-    //SPI Init
-
+    //Init GPS, Set GPS Packet Filters
+    //SetGNRMCFilter();
     //Init Accelerometer
-    LIS3DInit(ADDR_LIS3DSHTR);
-
-    //Init GPS
+    //LIS3DInit(ADDR_LIS3DSHTR);
 
     //Init All LEDs & GPIOS
     
     //RST pin for LORA / CATM1
     nrf_gpio_cfg_output(COMM_NRST_PIN);
+
+    nrf_gpio_pin_set(LEDR_PIN);
+    nrf_gpio_cfg_output(LEDR_PIN);
+    
+    nrf_gpio_pin_set(LEDG_PIN);
+    nrf_gpio_cfg_output(LEDG_PIN);
+    
+    nrf_gpio_pin_set(LEDB_PIN);
+    nrf_gpio_cfg_output(LEDB_PIN);
+    
 }
 
 void LfclkConfig(void)
@@ -319,6 +346,23 @@ void TWIM1Init(void)
     APP_ERROR_CHECK(err_code);
 
     nrf_drv_twi_enable(&twim1);
+}
+
+void SPIM0Init(void)
+{
+    ret_code_t err_code;
+    nrf_drv_spi_config_t spi_config = NRF_DRV_SPI_DEFAULT_CONFIG;
+    spi_config.miso_pin = SPIM0_MISO_PIN;
+    spi_config.mosi_pin = SPIM0_MOSI_PIN;
+    spi_config.sck_pin  = SPIM0_SCK_PIN;
+    spi_config.frequency = SPI_DEFAULT_FREQUENCY;
+    err_code = nrf_drv_spi_init(&spim0, &spi_config, NULL, NULL);
+    
+    /* Manually Control SS Pin as nrfDrivers do not allow transfers more than 256 bytes */
+    nrf_gpio_pin_set(SPIM0_SS_PIN);
+    nrf_gpio_cfg_output(SPIM0_SS_PIN);
+
+    APP_ERROR_CHECK(err_code);
 }
 
 void SlProcessComm(void)
