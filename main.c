@@ -70,6 +70,7 @@
 #include "lis3dshtr.h"
 #include "mcp7940m.h"
 #include "w25q32.h"
+#include "testsuite.h"
 
 /** Symphony link comm states
 */
@@ -146,6 +147,8 @@ uint8_t rxDataLen = 0;
 
 uint8_t slTxComp = 0, slRxComp = 0;
 
+//#define PROG_MODE_ASSET, define this macro to compile the prog for asset tracking mode. 
+
 /**
  * @brief Function for application main entry.
  */
@@ -153,43 +156,17 @@ int main(void)
 {
     enum app_states_t appState = APP_READY;
     uint32_t irqFlags;
-    uint8_t gpsData[100];
-    uint16_t accData[3];
-    
+      
     enum ll_state loraState;
     enum ll_tx_state txState;
     enum ll_rx_state rxState;
-     
+    
     /* Configure board. */
     InitPeripherals();
-
-    while(true)
-    {
-        nrf_gpio_pin_set(LEDR_PIN);
-        nrf_gpio_pin_set(LEDG_PIN);
-        nrf_gpio_pin_set(LEDB_PIN);
-        nrf_delay_ms(500);
-        nrf_gpio_pin_clear(LEDR_PIN);
-        nrf_gpio_pin_clear(LEDG_PIN);
-        nrf_gpio_pin_clear(LEDB_PIN);
-        nrf_delay_ms(500);
-    }
     
-    while(true)
-    {
-        LIS3DReadAccDataAll(ADDR_LIS3DSHTR, accData);
-        nrf_delay_ms(1000);
-    }
-    
-    while(1)
-    {
-        ReadGPSRaw(gpsData);
-        if(gpsData[0] == '$')
-        {
-            nrf_delay_ms(1);
-        }
-        nrf_delay_ms(1000);
-    }
+    //DigitalInpTest();
+    //GPSTest();
+    //GaugeTest();
 
     while (true)
     {
@@ -276,17 +253,19 @@ void InitPeripherals(void)
     SlIrqInit();
     TWIM1Init();
     SPIM0Init();
-
-    //Init GPS, Set GPS Packet Filters
+    
+    /* Initialize Battery Gauge */
+    //LC709Init();
+    /* Init GPS, Set GPS Packet Filters */
     //SetGNRMCFilter();
-    //Init Accelerometer
+    /* Init Accelerometer */
     //LIS3DInit(ADDR_LIS3DSHTR);
 
-    //Init All LEDs & GPIOS
-    
-    //RST pin for LORA / CATM1
+    /* Init All LEDs & GPIOS */
+    /* RST pin for LORA / CATM1 */
     nrf_gpio_cfg_output(COMM_NRST_PIN);
-
+    
+    /* Configure LED Pins as Outputs */
     nrf_gpio_pin_set(LEDR_PIN);
     nrf_gpio_cfg_output(LEDR_PIN);
     
@@ -295,7 +274,20 @@ void InitPeripherals(void)
     
     nrf_gpio_pin_set(LEDB_PIN);
     nrf_gpio_cfg_output(LEDB_PIN);
+
+    nrf_gpio_pin_set(LEDG_PIN);
+    nrf_gpio_cfg_output(LEDG_PIN);
     
+    /* Console Mux Select Pin */
+    nrf_gpio_pin_clear(SEL_MUX_PIN);
+    nrf_gpio_cfg_output(SEL_MUX_PIN);
+    
+    /* Input Pins */
+    /* PGOOD Pin 1 when power is good, 0 otherwise. */
+    nrf_gpio_cfg_input(PGOOD_PIN, NRF_GPIO_PIN_NOPULL);
+    /* NCHG Pin 1 when charging battery, 0 otherwise */
+    nrf_gpio_cfg_input(NCHG_PIN, NRF_GPIO_PIN_NOPULL);
+    nrf_gpio_cfg_input(SW_USR_PIN, NRF_GPIO_PIN_NOPULL);
 }
 
 void LfclkConfig(void)

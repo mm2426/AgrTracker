@@ -74,3 +74,22 @@ void LIS3DReadByte(uint8_t sla, uint8_t reg, uint8_t *recvData)
     /* Read single register */
     nrf_drv_twi_rx(&twim, sla, recvData, 1);
 }
+
+void GetOrientation(int16_t *acc, float *orientation)
+{
+    float accFlt[3];
+    accFlt[0] = ((float)acc[0])/32768.0f;
+    accFlt[1] = ((float)acc[1])/32768.0f;
+    accFlt[2] = ((float)acc[2])/32768.0f;
+    
+    //Equation 25 (Rotate Across X Axis)
+    orientation[0] = atan2(accFlt[1], accFlt[2]);
+    //Radian to degrees conversion
+    orientation[0] = (180.0f * orientation[0])/(float)M_PI;
+    
+    //Equation 26 (Rotate Across Y Axis)
+    orientation[1] = sqrt(accFlt[1]*accFlt[1] + accFlt[2]*accFlt[2]);
+    orientation[1] = atan2(-accFlt[0], orientation[1]); 
+    //Radian to degrees conversion
+    orientation[1] = (180.0f * orientation[1])/(float)M_PI;
+}

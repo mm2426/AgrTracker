@@ -4,8 +4,8 @@
  <Breakpoints groups="Breakpoints" active_group="Breakpoints">
   <BreakpointListItem trigger="" line="101" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="4" filename="../../../../../../components/drivers_nrf/twi_master/nrf_drv_twi.c" useHWbreakpoint="false"/>
   <BreakpointListItem trigger="" line="87" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="4" filename="../../../../../../components/drivers_nrf/twi_master/nrf_drv_twi.c" useHWbreakpoint="false"/>
-  <BreakpointListItem trigger="" line="947" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="4" filename="../../../../../../components/drivers_nrf/twi_master/nrf_drv_twi.c" useHWbreakpoint="false"/>
   <BreakpointListItem trigger="" line="40" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="2" filename="../../../../../../components/toolchain/ses/ses_nrf52_Vectors.s" useHWbreakpoint="false"/>
+  <BreakpointListItem trigger="" line="26" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="4" filename="../../../testsuite/src/testsuite.c" useHWbreakpoint="false"/>
   <Exceptions set="MemManage;UsageFault_Coprocessor;UsageFault_CheckingError;UsageFault_StateError;BusFault;ExceptionEntryReturnFault;HardFault"/>
  </Breakpoints>
  <ExecutionProfileWindow/>
@@ -30,10 +30,15 @@
   <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;Application"/>
   <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;Board Definition"/>
   <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;Device"/>
+  <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;ifc_lib"/>
+  <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;ifc_lib;src"/>
   <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;nRF_Drivers"/>
+  <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;nRF_Libraries"/>
   <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;peripheral_drivers"/>
   <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;peripheral_drivers;src"/>
   <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;Segger Startup Files"/>
+  <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;Testsuite"/>
+  <ProjectSessionItem path="agrilinx_tracker;agrilinx_tracker;Testsuite;src"/>
  </Project>
  <Register1>
   <RegisterWindow visibleNodes="CPU - Current Context/r0;CPU - Current Context/r1;CPU - Current Context/r2;CPU - Current Context/r3;CPU - Current Context/r4;CPU - Current Context/r5;CPU - Current Context/r6;CPU - Current Context/r7;CPU - Current Context/r8;CPU - Current Context/r9;CPU - Current Context/r10;CPU - Current Context/r11;CPU - Current Context/r12;CPU - Current Context/sp(r13);CPU - Current Context/lr(r14);CPU - Current Context/pc(r15);CPU - Current Context/apsr;CPU/r0;CPU/r1;CPU/r2;CPU/r3;CPU/r4;CPU/r5;CPU/r6;CPU/r7;CPU/r8;CPU/r9;CPU/r10;CPU/r11;CPU/r12;CPU/sp(r13);CPU/lr(r14);CPU/pc(r15);CPU/xpsr;CPU/msp;CPU/psp;CPU/cfbp;RTC1/TASKS_START;RTC1/TASKS_STOP;RTC1/TASKS_CLEAR;RTC1/TASKS_TRIGOVRFLW;RTC1/EVENTS_TICK;RTC1/EVENTS_OVRFLW;RTC1/EVENTS_COMPARE[0];RTC1/EVENTS_COMPARE[1];RTC1/EVENTS_COMPARE[2];RTC1/EVENTS_COMPARE[3];RTC1/INTENSET;RTC1/INTENCLR;RTC1/EVTEN;RTC1/EVTENSET;RTC1/EVTENCLR;RTC1/COUNTER;RTC1/PRESCALER;RTC1/CC[0];RTC1/CC[1];RTC1/CC[2];RTC1/CC[3]" binaryNodes="" asciiNodes="" openNodes="CPU - Current Context;RTC1" name="agrilinx_tracker" decimalNodes="" octalNodes="" unsignedNodes=""/>
@@ -53,7 +58,11 @@
  <Watch1>
   <Watches active="1" update="Never">
    <Watchpoint numelements="100" expression="buff" evalMode="2" name="buff" radix="1" linenumber="32" filename="../../../peripheral_drivers/src/ubloxm8.c" list=""/>
-   <Watchpoint numelements="100" expression="gpsData" evalMode="2" name="gpsData" radix="-1" linenumber="190" filename="../../../main.c" list=""/>
+   <Watchpoint numelements="100" expression="gpsData" evalMode="2" name="gpsData" radix="-1" linenumber="176" filename="../../../main.c" list=""/>
+   <Watchpoint numelements="3" expression="oriVals" evalMode="2" name="oriVals" radix="-1" linenumber="14" filename="../../../testsuite/src/testsuite.c" list=""/>
+   <Watchpoint numelements="0" expression="voltage" evalMode="0" name="voltage" radix="10" linenumber="139" filename="../../../testsuite/src/testsuite.c" list=""/>
+   <Watchpoint numelements="0" expression="rsoc" evalMode="0" name="rsoc" radix="10" linenumber="139" filename="../../../testsuite/src/testsuite.c" list=""/>
+   <Watchpoint numelements="0" expression="pkt" evalMode="0" name="pkt" radix="-1" linenumber="26" filename="../../../testsuite/src/testsuite.c" list=""/>
   </Watches>
  </Watch1>
  <Watch2>
@@ -66,14 +75,14 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="175" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../main.c" debugPath="../../../main.c" selected="1" top="152" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="720" useTextEdit="1" useBinaryEdit="0" left="0" path="../config/sdk_config.h" debugPath="../config/sdk_config.h" selected="0" top="705" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="37" y="53" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../../../../components/boards/agrilinx_bl652.h" debugPath="../../../../../../components/boards/agrilinx_bl652.h" selected="0" top="46" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="4" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/src/w25q32.c" debugPath="../../../peripheral_drivers/src/w25q32.c" selected="0" top="0" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="6" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/inc/w25q32.h" debugPath="../../../peripheral_drivers/inc/w25q32.h" selected="0" top="0" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="26" y="98" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../../../../components/boards/boards.c" debugPath="../../../../../../components/boards/boards.c" selected="0" top="81" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="39" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../../../../components/toolchain/ses/ses_nrf52_Vectors.s" debugPath="../../../../../../components/toolchain/ses/ses_nrf52_Vectors.s" selected="0" top="27" codecName=""/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="171" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../../../../components/drivers_nrf/delay/nrf_delay.h" debugPath="../../../../../../components/drivers_nrf/delay/nrf_delay.h" selected="0" top="159" codecName=""/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="6" y="166" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../main.c" debugPath="../../../main.c" selected="1" top="145" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="46" y="610" useTextEdit="1" useBinaryEdit="0" left="0" path="../config/sdk_config.h" debugPath="../config/sdk_config.h" selected="0" top="597" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="37" y="81" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../../../../components/boards/agrilinx_bl652.h" debugPath="../../../../../../components/boards/agrilinx_bl652.h" selected="0" top="74" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="58" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../testsuite/src/testsuite.c" debugPath="../../../testsuite/src/testsuite.c" selected="0" top="54" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="28" y="25" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../testsuite/inc/testsuite.h" debugPath="../../../testsuite/inc/testsuite.h" selected="0" top="8" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="5" y="33" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/src/ubloxm8.c" debugPath="../../../peripheral_drivers/src/ubloxm8.c" selected="0" top="28" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="5" y="22" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/inc/ubloxm8.h" debugPath="../../../peripheral_drivers/inc/ubloxm8.h" selected="0" top="6" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="5" y="5" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/src/lc709203f.c" debugPath="../../../peripheral_drivers/src/lc709203f.c" selected="0" top="0" codecName="Default"/>
  </Files>
  <ARMCrossStudioWindow activeProject="agrilinx_tracker" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" debugSearchFileMap="" fileDialogInitialDirectory="D:/nRF5_SDK14/components/drivers_nrf/uart" debugSearchPath="" autoConnectCapabilities="3711"/>
 </session>

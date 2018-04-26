@@ -6,9 +6,20 @@
     
     #include "nrf_delay.h"
     #include "nrf_drv_twi.h"
+    #include <stdlib.h>
     
     typedef struct gps_pkt_t{
-        uint8_t valid;
+        /*
+         * Status Bit definitions:
+                    0 = 1 if valid.
+                    1 = 1 if North, 0 if South.
+                    2 = 1 if East, 0 if West. 
+         */
+        uint8_t status;
+        uint8_t latDeg, lonDeg;
+        float latMins, lonMins;
+        uint8_t hrs, min, sec;
+        uint8_t dd, mm, yy;
     }gps_pkt_t;
     
     void SetGNRMCFilter(void);

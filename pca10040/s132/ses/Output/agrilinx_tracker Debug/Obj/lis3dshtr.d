@@ -34,4 +34,5 @@ Output/agrilinx_tracker\ Debug/Obj/lis3dshtr.o: \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_twi.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_peripherals.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_twim.h \
- d:\nrf5_sdk14\components\libraries\util\sdk_errors.h
+ d:\nrf5_sdk14\components\libraries\util\sdk_errors.h \
+ C:/Program\ Files/SEGGER/SEGGER\ Embedded\ Studio\ for\ ARM\ 3.34/include/math.h

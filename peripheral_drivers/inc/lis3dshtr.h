@@ -6,6 +6,7 @@
     
     #include "nrf_delay.h"
     #include "nrf_drv_twi.h"
+    #include <math.h>
     
     /* Register Map Definitions*/
     /* Temperature Output */
@@ -190,5 +191,7 @@
     
       void LIS3DWriteByte(uint8_t sla, uint8_t reg, uint8_t data);
       void LIS3DReadByte(uint8_t sla, uint8_t reg, uint8_t *recvData);
+      
+      void GetOrientation(int16_t *acc, float *orientation);
     #endif
 #endif
