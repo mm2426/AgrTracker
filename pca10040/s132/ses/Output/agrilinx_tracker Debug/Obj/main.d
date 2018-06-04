@@ -72,6 +72,9 @@ Output/agrilinx_tracker\ Debug/Obj/main.o: \
  ../../../peripheral_drivers/inc/lis3dshtr.h \
  C:/Program\ Files/SEGGER/SEGGER\ Embedded\ Studio\ for\ ARM\ 3.34/include/math.h \
  ../../../peripheral_drivers/inc/mcp7940m.h \
- ../../../peripheral_drivers/inc/w25q32.h \
+ ../../../peripheral_drivers/inc/lc709203f.h \
+ ../../../peripheral_drivers/inc/memmanager.h \
+ ../../../peripheral_drivers/inc/w25q32.h ../../../appconfig.h \
+ D:\nRF5_SDK14\examples\peripheral\agrilinx_tracker\appconfig.h \
  ../../../testsuite/inc/testsuite.h \
- ../../../peripheral_drivers/inc/lc709203f.h
+ ../../../peripheral_drivers/inc/w25q32.h

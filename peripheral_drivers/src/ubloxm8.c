@@ -33,10 +33,18 @@ void ReadGPSRaw(uint8_t *buff)
 
 void ReadGPS(gps_pkt_t *pkt)
 {
-    uint8_t buff[100];
-    memcpy(buff, "$GNRMC,124516,A,4717.112671,", 29);
-    //ReadGPSRaw(buff);
-    ParseGPSPkt(pkt, buff);
+    uint8_t i = 0;
+    uint8_t buff[100]={};
+    //memcpy(buff, "$GNRMC,154818,A,1723.10264,N,07829.2002,E,0.004,77.52,010518,", 65);
+    for(i = 0; i<10; i++)
+    {
+        ReadGPSRaw(buff);
+        if(buff[0]=='$')
+            break;
+        nrf_delay_ms(100);
+    }
+    if(buff[0]=='$')
+        ParseGPSPkt(pkt, buff);
 }
 
 void ParseGPSPkt(gps_pkt_t *pkt, uint8_t *buff)
@@ -44,6 +52,8 @@ void ParseGPSPkt(gps_pkt_t *pkt, uint8_t *buff)
     uint8_t stIndex;
     int len;
     char *ptr;
+    pkt->status = 0;
+
     /* If $GNRMC, matched */
     if (!memcmp("$GNRMC,", buff, 7))
     {
@@ -52,9 +62,13 @@ void ParseGPSPkt(gps_pkt_t *pkt, uint8_t *buff)
         len = ptr - (char *)&buff[stIndex];
         if (len > 0)
         {
-            pkt->hrs = ((buff[stIndex] - '0') * 10) + (buff[stIndex+1] - '0');
-            pkt->min = ((buff[stIndex+2] - '0') * 10) + (buff[stIndex + 3] - '0');
-            pkt->sec = ((buff[stIndex+4] - '0') * 10) + (buff[stIndex + 5] - '0');
+            pkt->hrs = ((buff[stIndex] - '0')<<4)|(buff[stIndex + 1] - '0');
+            pkt->min = ((buff[stIndex + 2] - '0')<<4)|(buff[stIndex + 3] - '0');
+            pkt->sec = ((buff[stIndex + 4] - '0')<<4)|(buff[stIndex + 5] - '0');
+        }
+        else
+        {
+            return;
         }
         stIndex = stIndex + len + 1;
         if (buff[stIndex] == 'A')
@@ -75,6 +89,79 @@ void ParseGPSPkt(gps_pkt_t *pkt, uint8_t *buff)
             len -= 2;
             stIndex += 2;
             pkt->latMins = strtof((char *)&buff[stIndex], NULL);
+            stIndex = stIndex + len + 1;
+        }
+        else
+        {
+            pkt->status = 0;
+            return;
+        }
+        ptr = (char *)strstr((char *)&buff[stIndex], ",");
+        len = ptr - (char *)&buff[stIndex];
+        if (len > 0)
+        {
+            if (buff[stIndex] == 'N')
+            {
+                pkt->status |= (1 << 1);
+            }
+            stIndex += 2;
+        }
+        else
+        {
+            pkt->status = 0;
+            return;
+        }
+
+        ptr = (char *)strstr((char *)&buff[stIndex], ",");
+        len = ptr - (char *)&buff[stIndex];
+        if (len > 0)
+        {
+            pkt->lonDeg = ((buff[stIndex] - '0') * 100) + ((buff[stIndex + 1] - '0') * 10) + (buff[stIndex + 2] - '0');
+            len -= 3;
+            stIndex += 3;
+            pkt->lonMins = strtof((char *)&buff[stIndex], NULL);
+            stIndex = stIndex + len + 1;
+        }
+        else
+        {
+            pkt->status = 0;
+            return;
+        }
+        ptr = (char *)strstr((char *)&buff[stIndex], ",");
+        len = ptr - (char *)&buff[stIndex];
+        if (len > 0)
+        {
+            if (buff[stIndex] == 'E')
+            {
+                    pkt->status |= (1 << 2);
+            }
+            stIndex += 2;
+        }
+        else
+        {
+            pkt->status = 0;
+            return;
+        }
+        ptr = (char *)strstr((char *)&buff[stIndex], ",");
+        len = ptr - (char *)&buff[stIndex];
+        stIndex += len + 1;
+
+        ptr = (char *)strstr((char *)&buff[stIndex], ",");
+        len = ptr - (char *)&buff[stIndex];
+        stIndex += len + 1;
+
+        ptr = (char *)strstr((char *)&buff[stIndex], ",");
+        len = ptr - (char *)&buff[stIndex];
+        if (len > 0)
+        {
+            pkt->dd = ((buff[stIndex] - '0') << 4) | (buff[stIndex + 1] - '0');
+            pkt->mm = ((buff[stIndex + 2] - '0') << 4) | (buff[stIndex + 3] - '0');
+            pkt->yy = ((buff[stIndex + 4] - '0') << 4) | (buff[stIndex + 5] - '0');
+        }
+        else
+        {
+            pkt->status = 0;
+            return;
         }
     }
 }

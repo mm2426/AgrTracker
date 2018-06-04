@@ -29,10 +29,36 @@ void W25Q32CmdWriteEn(uint8_t en)
 
     /* Manually Control SS Pin as nrfDrivers do not allow transfers more than 256 bytes */
     nrf_gpio_pin_clear(SPIM0_SS_PIN);
+    nrf_delay_us(1);
     nrf_drv_spi_transfer(&spim, intBuff.txBuff, intBuff.txBuffLen, intBuff.rxBuff, intBuff.rxBuffLen);
+    nrf_delay_us(1);
     nrf_gpio_pin_set(SPIM0_SS_PIN);
+    /* Waiting time for non volatile status reg write */
+    nrf_delay_ms(15);
 }
 
+void W25Q32CmdWriteEnVol(uint8_t en)
+{
+    if(en)
+    {
+        intBuff.txBuff[0] = 0x50;
+    }
+    else
+    {
+        intBuff.txBuff[0] = W25Q32_CMD_WRITE_DIS;
+    }
+    intBuff.txBuffLen = 1;
+    intBuff.rxBuffLen = 1;
+
+    /* Manually Control SS Pin as nrfDrivers do not allow transfers more than 256 bytes */
+    nrf_gpio_pin_clear(SPIM0_SS_PIN);
+    nrf_delay_us(1);
+    nrf_drv_spi_transfer(&spim, intBuff.txBuff, intBuff.txBuffLen, intBuff.rxBuff, intBuff.rxBuffLen);
+    nrf_delay_us(1);
+    nrf_gpio_pin_set(SPIM0_SS_PIN);
+    /* Waiting time for volatile status reg write */
+    nrf_delay_ms(1);
+}
 /** 
 * @brief Read Status Reg Cmd
 * @param[in] regId Id of the status register to be read (1/2/3).
@@ -52,14 +78,18 @@ uint8_t W25Q32CmdReadStatReg(uint8_t regId)
     {
         intBuff.txBuff[0] = W25Q32_CMD_READ_STAT_REG3;
     }
-    intBuff.txBuffLen = 1;
-    intBuff.rxBuffLen = 1;
+    /* Length 1 extra sent for clocking dummy byte */
+    intBuff.txBuffLen = 2;
+    intBuff.rxBuffLen = 2;
+    
+    intBuff.rxBuff[0] = 0;
+    intBuff.rxBuff[1] = 0;
 
     /* Manually Control SS Pin as nrfDrivers do not allow transfers more than 256 bytes */
     nrf_gpio_pin_clear(SPIM0_SS_PIN);
     nrf_drv_spi_transfer(&spim, intBuff.txBuff, intBuff.txBuffLen, intBuff.rxBuff, intBuff.rxBuffLen);
     nrf_gpio_pin_set(SPIM0_SS_PIN);
-    return intBuff.rxBuff[0];
+    return intBuff.rxBuff[1];
 }
 
 /** 
@@ -69,14 +99,14 @@ uint8_t W25Q32CmdReadStatReg(uint8_t regId)
 uint8_t W25Q32CmdIsBusy(void)
 {
     intBuff.txBuff[0] = W25Q32_CMD_READ_STAT_REG1;
-    intBuff.txBuffLen = 1;
-    intBuff.rxBuffLen = 1;
+    intBuff.txBuffLen = 2;
+    intBuff.rxBuffLen = 2;
 
     /* Manually Control SS Pin as nrfDrivers do not allow transfers more than 256 bytes */
     nrf_gpio_pin_clear(SPIM0_SS_PIN);
     nrf_drv_spi_transfer(&spim, intBuff.txBuff, intBuff.txBuffLen, intBuff.rxBuff, intBuff.rxBuffLen);
     nrf_gpio_pin_set(SPIM0_SS_PIN);
-    return (intBuff.rxBuff[0]&0x01);
+    return (intBuff.rxBuff[1]&0x01);
 }
 
 /** 
@@ -88,6 +118,7 @@ void W25Q32CmdWriteStatReg(uint8_t regId, uint8_t regVal)
 {
     /* Enables Writes to the Chip */
     W25Q32CmdWriteEn(1);
+    //W25Q32CmdWriteEnVol(1);
     nrf_delay_ms(1);
 
     if(regId == 1)
@@ -220,7 +251,7 @@ void W25Q32CmdEraseSector(uint32_t addr, uint8_t busyWait)
     nrf_drv_spi_transfer(&spim, intBuff.txBuff, intBuff.txBuffLen, intBuff.rxBuff, intBuff.rxBuffLen);
     nrf_gpio_pin_set(SPIM0_SS_PIN);
     
-    /* Takes aroud 400ms to perform Block Erase */
+    /* Takes aroud 400ms to perform Sector Erase */
     if(busyWait)
     {
         nrf_delay_ms(350);
@@ -318,7 +349,7 @@ void W25Q32CmdChipErase(uint8_t busyWait)
     /* Takes aroud 50 secs to perform chip erase */
     if(busyWait)
     {
-        nrf_delay_ms(45000);
+        //nrf_delay_ms(45000);
         do
         {
             nrf_delay_ms(1000);

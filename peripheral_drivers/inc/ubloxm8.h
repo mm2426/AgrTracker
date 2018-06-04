@@ -8,7 +8,7 @@
     #include "nrf_drv_twi.h"
     #include <stdlib.h>
     
-    typedef struct gps_pkt_t{
+    struct gps_pkt_t{
         /*
          * Status Bit definitions:
                     0 = 1 if valid.
@@ -16,11 +16,12 @@
                     2 = 1 if East, 0 if West. 
          */
         uint8_t status;
-        uint8_t latDeg, lonDeg;
-        float latMins, lonMins;
         uint8_t hrs, min, sec;
         uint8_t dd, mm, yy;
-    }gps_pkt_t;
+        uint8_t latDeg, lonDeg;
+        float latMins, lonMins;
+    }__attribute__((packed));
+    typedef struct gps_pkt_t gps_pkt_t;
     
     void SetGNRMCFilter(void);
     void ReadGPSRaw(uint8_t *buff);

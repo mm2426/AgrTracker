@@ -90,6 +90,9 @@ int32_t transport_write(uint8_t *buff, uint16_t len)
     
     //Wait until transmission completes
     while(txBusy);
+    
+    /* DeSelect LORA Port for Tx */
+   //nrf_gpio_pin_clear(SEL_MUX_PIN);
 
     return 0;
 }
@@ -98,6 +101,10 @@ int32_t transport_write(uint8_t *buff, uint16_t len)
 /* Rx function, initiates DMA read and collects all received bytes on UART in a buff */
 void transport_read_actual(void)
 {
+    /* Select LORA Port for Rx */
+//    nrf_gpio_pin_set(SEL_MUX_PIN);
+//    nrf_delay_ms(1);
+
     rxDone = 0;
     rtcExpired = 0;
 
@@ -112,6 +119,9 @@ void transport_read_actual(void)
     while(!rxDone);
     rxBuffIndex = 0;
     rxBuffLen = uart_driver_instance.reg.p_uarte->RXD.AMOUNT;
+    
+//    /* DeSelect LORA Port for Rx */
+//    nrf_gpio_pin_clear(SEL_MUX_PIN);
 }
 
 /* Rx Function used by symphony link library.
@@ -120,6 +130,12 @@ void transport_read_actual(void)
 int32_t transport_read(uint8_t *buff, uint16_t len)
 {
     uint8_t i = 0;
+
+//    /* Select LORA Port for Rx */
+//    nrf_gpio_pin_set(SEL_MUX_PIN);
+//    nrf_delay_ms(1);
+
+    
 #ifdef DEBUG_PRINT_EVERY_BYTE_TX_RX
     int i;
     for (i = 0; i < bytes_read; i++)
@@ -139,4 +155,7 @@ int32_t transport_read(uint8_t *buff, uint16_t len)
     {
         return -1;
     }
+    
+//    /* DeSelect LORA Port for Rx */
+//    nrf_gpio_pin_clear(SEL_MUX_PIN);
 }

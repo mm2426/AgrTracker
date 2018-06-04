@@ -70,4 +70,6 @@ Output/agrilinx_tracker\ Debug/Obj/testsuite.o: \
  C:/Program\ Files/SEGGER/SEGGER\ Embedded\ Studio\ for\ ARM\ 3.34/include/math.h \
  ../../../peripheral_drivers/inc/mcp7940m.h \
  ../../../peripheral_drivers/inc/w25q32.h \
- ../../../peripheral_drivers/inc/lc709203f.h
+ ../../../peripheral_drivers/inc/lc709203f.h \
+ ../../../peripheral_drivers/inc/memmanager.h \
+ ../../../peripheral_drivers/inc/w25q32.h ../../../appconfig.h

@@ -10,11 +10,12 @@
     * 4K Sector Erase
     * 64K Block Erase
     * Entire Chip Erase
-    * Address Format: XXYYZZ
+    * Address Format: 0x00XXYZBB
     * Where:
     *   XX = Block No.
-    *   YY = Sector No.
-    *   ZZ = Page No.
+    *   Y  = Sector No.
+    *   Z  = Page No.
+    *   BB = Byte No.
     */
     
     #define SPIM0_MAX_BUFF_LEN          256
@@ -107,6 +108,7 @@
     * @param[in] en 1 = Enable Writes, 0 = Disable Writes.
     */
     void W25Q32CmdWriteEn(uint8_t en);
+    void W25Q32CmdWriteEnVol(uint8_t en);
     /** 
     * @brief Read Status Reg Cmd
     * @param[in] regId Id of the status register to be read (1/2/3).
@@ -145,6 +147,7 @@
     /** 
     * @brief Erase Sector Cmd
     * @param[in] addr Address of the 4K Sector to be erased.
+    * @param[in] busyWait if 1 poll status and wait for the command to complete.
     */
     void W25Q32CmdEraseSector(uint32_t addr, uint8_t busyWait);
     /** 

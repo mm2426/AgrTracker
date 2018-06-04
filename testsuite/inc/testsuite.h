@@ -19,12 +19,15 @@
   #include "mcp7940m.h"
   #include "w25q32.h"
   #include "lc709203f.h"
+  #include "memmanager.h"
+  #include "appconfig.h"
   
   void AccelerometerTest(void);
   void GPSTest(void);
   void LEDTest(void);
   void DigitalInpTest(void);
   void MemoryTest(void);
+  void MemManTest(void);
   void RTCTest(void);
   void GaugeTest(void);
   void ConsoleTest(void);

@@ -48,9 +48,6 @@
  *
  */
 
-#define  APP_QOS                    15
-#define  SL_BUFFER_LEN              100
-
 #include <stdbool.h>
 #include <stdint.h>
 #include "nrf_delay.h"
@@ -69,29 +66,10 @@
 #include "ubloxm8.h"
 #include "lis3dshtr.h"
 #include "mcp7940m.h"
-#include "w25q32.h"
+#include "lc709203f.h"
+#include "memmanager.h"
+#include "appconfig.h"
 #include "testsuite.h"
-
-/** Symphony link comm states
-*/
-enum sl_states_t
-{
-    SL_RESET,
-    SL_UNINITIALIZED,
-    SL_SCANNING,
-    SL_READY,
-    SL_TRANSMITTING,
-    SL_RECEIVING,
-    SL_WAITING,
-    SL_ERROR
-};
-
-enum app_states_t
-{
-    APP_READY,
-    APP_TRANSMITTING,
-    APP_RECEIVING
-};
 
 /** @brief Function to initialize all the onboard peripherals
  */
@@ -127,6 +105,10 @@ void SlIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
  */
 void SlProcessComm(void);
 
+/** @brief Function to calculate checksum-8
+ */
+uint8_t CalcChkSum(uint8_t *buff, uint8_t len);
+
 /** @brief Variables tracking LORA comm state.
  */
 enum sl_states_t slCommState = SL_RESET;
@@ -156,6 +138,10 @@ int main(void)
 {
     enum app_states_t appState = APP_READY;
     uint32_t irqFlags;
+    uint8_t txCounter = 0, slTxLen = 0, minCounter = 0;
+    app_pkt_t appData;
+    app_pkt_t app1MinBuff[6];
+    uint8_t slBuffIndex = 0;
       
     enum ll_state loraState;
     enum ll_tx_state txState;
@@ -164,9 +150,11 @@ int main(void)
     /* Configure board. */
     InitPeripherals();
     
-    //DigitalInpTest();
-    //GPSTest();
-    //GaugeTest();
+    nrf_delay_ms(1000);
+
+    MemoryTest();
+
+    MemManTest();
 
     while (true)
     {
@@ -174,8 +162,85 @@ int main(void)
         //__SEV();
         //__WFE();
         
+        if(txCounter == 10)
+        {
+            ReadGPS(&appData.gpsPkt);
+            appData.batV = LC709GetRSOC();
+            
+            #if defined(TX_10SEC_TEST)
+                if(appData.gpsPkt.status)
+                {
+                    slBuffer[0] = '$';
+                    slBuffer[1] = 0x02;
+                    /* Payload Length */
+                    slBuffer[2] = sizeof(appData) + 2;
+                    /* Number of Records */
+                    slBuffer[3] = 1;
+                    /* Indicating GPS Data Valid */
+                    slBuffer[4] = 0x01;
+                    memcpy(&slBuffer[5], &appData, sizeof(appData));
+                    slBuffer[5 + sizeof(appData)] = CalcChkSum(slBuffer, (5 + sizeof(appData)));
+                    slTxLen = 6 + sizeof(appData);
+                    
+                    nrf_gpio_pin_clear(LEDB_PIN);
+                    nrf_gpio_pin_set(LEDG_PIN);
+                }
+                else
+                {
+                    slBuffer[0] = '$';
+                    slBuffer[1] = 0x02;
+                    /* Payload Length */
+                    slBuffer[2] = 3;
+                    /* Number of Records */
+                    slBuffer[3] = 1;
+                    /* Indicating GPS Data Invalid */
+                    slBuffer[4] = 0;
+                    slBuffer[5] = appData.batV;
+                    slBuffer[6] = CalcChkSum(slBuffer, 6);
+                    slTxLen = 7;
+                    
+                    nrf_gpio_pin_clear(LEDG_PIN);
+                    nrf_gpio_pin_set(LEDB_PIN);
+                }
+            #else                    
+                memcpy(&app1MinBuff[minCounter++], &appData, sizeof(appData));
+                if(minCounter == 6)
+                {
+                    /* Transmit 6 records */
+                    slBuffer[0] = '$';
+                    slBuffer[1] = 0x02;
+                    //Index reserved for length
+                    //slBuffer[2] = sizeof(appData);
+                    /* Number of Records */
+                    slBuffer[3] = 6;
+                    /* Indicates GPS Data Valid / Invalid */
+                    slBuffer[4] = 0x00;
+                    slBuffIndex = 5;
+                    for(i = 0; i< 6; i++)
+                    {
+                        if(app1MinBuff[i].gpsPkt.status)
+                        {
+                            slBuffer[4] |= (1<<i);
+                            memcpy(&slBuffer[slBuffIndex], &appData, sizeof(appData));
+                            slBuffIndex += sizeof(appData);
+                        }
+                        else
+                        {
+                            slBuffer[slBuffIndex++] = appData.batV;
+                        }
+                    }
+                    
+                    slBuffer[slBuffIndex] = CalcChkSum(slBuffer, slBuffIndex);
+                    slTxLen = (slBuffIndex+1) + sizeof(appData);
+                    minCounter = 0;
+                }
+            #endif
+            txCounter = 0;
+        }
+
         if(slCommState == SL_READY)
         {
+            nrf_gpio_pin_toggle(LEDR_PIN);
             ll_get_state(&loraState, &txState, &rxState);
             //Read and clear IRQ Flags
             ll_irq_flags(0xFFFFFFFF, &irqFlags);
@@ -188,23 +253,11 @@ int main(void)
             }
             else if(!slTxComp && !slRxComp)
             {
-                //To transmit data on LORA
-                /*if(ll_message_send_ack(slBuffer, 20)>=0)
+                if(slTxLen)
                 {
-    
-                }*/
-//                slBuffer[0] = 'A';
-//                slBuffer[1] = 'B';
-//                slBuffer[2] = 'C';
-//                slBuffer[3] = 'D';
-//                slBuffer[4] = 'E';
-//                slBuffer[5] = 'F';
-//                slBuffer[6] = 'G';
-//                slBuffer[7] = 'H';
-//
-//                ll_message_send_ack(slBuffer, 8);
-                
-                //ll_mailbox_request();
+                    ll_message_send_ack(slBuffer, slTxLen);
+                    slTxLen = 0;
+                }
                 slCommState = SL_TRANSMITTING;
             }
         }
@@ -221,7 +274,8 @@ int main(void)
             slTxComp = 0;
         }
 
-        nrf_delay_ms(200);
+        txCounter++;
+        nrf_delay_ms(1000);
     }
 }
 
@@ -246,7 +300,6 @@ void SlIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 
 void InitPeripherals(void)
 {
-    bsp_board_leds_init();
     LfclkConfig();
     RTC1Init();
     ll_uart_init();
@@ -255,9 +308,9 @@ void InitPeripherals(void)
     SPIM0Init();
     
     /* Initialize Battery Gauge */
-    //LC709Init();
+    LC709Init();
     /* Init GPS, Set GPS Packet Filters */
-    //SetGNRMCFilter();
+    SetGNRMCFilter();
     /* Init Accelerometer */
     //LIS3DInit(ADDR_LIS3DSHTR);
 
@@ -288,6 +341,9 @@ void InitPeripherals(void)
     /* NCHG Pin 1 when charging battery, 0 otherwise */
     nrf_gpio_cfg_input(NCHG_PIN, NRF_GPIO_PIN_NOPULL);
     nrf_gpio_cfg_input(SW_USR_PIN, NRF_GPIO_PIN_NOPULL);
+
+    /* Select LORA Port for UART */
+    nrf_gpio_pin_set(SEL_MUX_PIN);
 }
 
 void LfclkConfig(void)
@@ -381,12 +437,19 @@ void SlProcessComm(void)
     switch(slCommState)
     {
         case SL_RESET:
-            nrf_gpio_pin_set(COMM_NRST_PIN);
-            nrf_delay_ms(100);
-            nrf_gpio_pin_clear(COMM_NRST_PIN);
+            #ifndef SL_EVBOARD_RST
+                nrf_gpio_pin_clear(COMM_NRST_PIN);
+                nrf_delay_ms(100);
+                nrf_gpio_pin_set(COMM_NRST_PIN);
+            #else
+                nrf_gpio_pin_set(COMM_NRST_PIN);
+                nrf_delay_ms(100);
+                nrf_gpio_pin_clear(COMM_NRST_PIN);
+            #endif
+            
             slCommState = SL_WAITING;
             slCommNextState = SL_UNINITIALIZED;
-            nrf_gpio_pin_set(LED_1);
+            nrf_gpio_pin_clear(LEDR_PIN);
             rxErrCnt = 0;
             txErrCnt = 0;
             //Set compare channel 0
@@ -394,8 +457,7 @@ void SlProcessComm(void)
             nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_START);
             break;
         case SL_UNINITIALIZED:
-            //Select UFL antenna
-            if(ll_antenna_set(1)>=0)
+            if(ll_antenna_set(SL_ANT_SELECTED)>=0)
             {
                 
             }
@@ -546,7 +608,7 @@ void SlProcessComm(void)
             {
                 rtcExpired = 0;
                 slCommState = slCommNextState;
-                nrf_gpio_pin_clear(LED_1);
+                nrf_gpio_pin_set(LEDR_PIN);
             }
             break;
         case SL_ERROR:
@@ -558,6 +620,16 @@ void SlProcessComm(void)
             nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_START);
             break;
     }
+}
+
+uint8_t CalcChkSum(uint8_t *buff, uint8_t len)
+{
+    uint8_t i = 0, chkSum = 0;
+    for( i = 0; i < len; i++)
+    {
+        chkSum += buff[i];
+    }
+    return chkSum;
 }
 
 /**

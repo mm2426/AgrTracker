@@ -23,15 +23,22 @@ void GPSTest(void)
     
     SetGNRMCFilter();
     
-    ReadGPS(&pkt);
+    //ReadGPS(&pkt);
 
     while(1)
     {
-        memset(gpsData, 0, sizeof(gpsData));
-        ReadGPSRaw(gpsData);
-        if(gpsData[0] == '$')
+//        memset(gpsData, 0, sizeof(gpsData));
+//        ReadGPSRaw(gpsData);
+        memset(&pkt, 0, sizeof(pkt));
+        ReadGPS(&pkt);
+//        if(gpsData[0] == '$')
+//        {
+//            //nrf_delay_ms(1);
+//            nrf_gpio_pin_toggle(LEDB_PIN);
+//        }
+        if(pkt.status)
         {
-            nrf_delay_ms(1);
+            nrf_gpio_pin_toggle(LEDB_PIN);
         }
         nrf_delay_ms(1000);
     }
@@ -79,10 +86,29 @@ void DigitalInpTest(void)
 void MemoryTest(void)
 {
     uint8_t buff[10], rBuff[10];
+    uint16_t manId;
+    
+    W25Q32CmdReset();
+    
+    //W25Q32CmdWriteStatReg(3, 0x00);
+    
+    W25Q32CmdWriteEn(1);
+
+    while(1)
+    {
+        //manId = W25Q32CmdReadDevId();
+        buff[0] = W25Q32CmdReadStatReg(1);  
+        nrf_delay_ms(2000);
+    }
+    
+
+
+    W25Q32CmdChipErase(1);
 
     W25Q32CmdEraseSector(0x00000000,1);
+    //W25Q32CmdEraseBlock32(0x00000000, 1);
 
-    buff[0] = 0xAB;
+    buff[0] = 0xFB;
     buff[1] = 0xCD;
     buff[2] = 0xEF;
     buff[3] = 0xAB;
@@ -106,6 +132,44 @@ void MemoryTest(void)
         else
         {
             nrf_gpio_pin_toggle(LEDR_PIN);   
+        }
+        nrf_delay_ms(1000);
+    }
+}
+
+void MemManTest(void)
+{
+    app_pkt_t dPkt, rPkt;
+    uint8_t rLen;
+    
+    dPkt.header = APP_PKT_HDR;
+    dPkt.footer = APP_PKT_FTR;
+    dPkt.batV = 56;
+    dPkt.gpsPkt.dd = 0x01;
+    dPkt.gpsPkt.mm = 0x06;
+    dPkt.gpsPkt.yy = 0x18;
+    dPkt.gpsPkt.hrs = 0x17;
+    dPkt.gpsPkt.min = 0x26;
+    dPkt.gpsPkt.sec = 0x43;
+    dPkt.gpsPkt.latDeg = 56;
+    dPkt.gpsPkt.lonDeg = 143;
+    dPkt.gpsPkt.latMins = 33.43f;
+    dPkt.gpsPkt.lonMins = 25.87f;
+    dPkt.gpsPkt.status = 1;
+
+    MemManInit();
+    MemManWriteRecs(&dPkt,1);
+    
+    while(1)
+    {
+        MemManReadPage(&rPkt, &rLen,0);
+        if(rLen)
+        {
+            rLen++;
+        }
+        else
+        {
+            rLen--;
         }
         nrf_delay_ms(1000);
     }
