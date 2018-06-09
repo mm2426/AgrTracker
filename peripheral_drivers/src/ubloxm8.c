@@ -35,6 +35,7 @@ void ReadGPS(gps_pkt_t *pkt)
 {
     uint8_t i = 0;
     uint8_t buff[100]={};
+    memset(pkt, 0, sizeof(gps_pkt_t));
     //memcpy(buff, "$GNRMC,154818,A,1723.10264,N,07829.2002,E,0.004,77.52,010518,", 65);
     for(i = 0; i<10; i++)
     {

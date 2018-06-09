@@ -57,6 +57,7 @@
 #include "nrf_drv_clock.h"
 #include "nrf_drv_rtc.h"
 #include "nrf_drv_gpiote.h"
+#include "nrf_pwr_mgmt.h"
 #include "nrf_log.h"
 #include "boards.h"
 #include "ifc_struct_defs.h"
@@ -80,14 +81,15 @@ void InitPeripherals(void);
 void LfclkConfig(void);
 
 /**
- * @brief Function for initializing real time counter 1.
- * RTC1 is used as a tick timer to generate delays. 
+ * @brief Function for initializing real time counter 1 & 2.
+ * RTC1 is used as a base timer to generate 10 sec delay.
+ * RTC2 is used as a tick timer to generate delays. 
  */
-void RTC1Init(void);
+void RTCInit(void);
 
 /** @brief Function to initialize Lora RX interrupt
  */
-void SlIrqInit(void);
+void SWIrqInit(void);
 
 /** @brief Function to initialize TWI Master
  */
@@ -99,7 +101,7 @@ void SPIM0Init(void);
 
 /** @brief Lora Rx interrupt handler
  */
-void SlIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
+static void SWIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action);
 
 /** @brief Function to process the symphony link state machine.
  */
@@ -109,6 +111,18 @@ void SlProcessComm(void);
  */
 uint8_t CalcChkSum(uint8_t *buff, uint8_t len);
 
+/** @brief Function to detect switch press in a non-blocking manner. 
+ */
+void CheckSwPress(void);
+
+/** @brief Puts MCU to sleep and enters Low Power Mode. 
+ */
+void EnterLowPower(void);
+
+/** @brief Parses received packet on LORA and generates resp.
+ */
+void ParseLoraRxPkt(uint8_t *rxBuff, uint8_t rxDataLen, uint8_t *respBuff, uint8_t *respLen);
+
 /** @brief Variables tracking LORA comm state.
  */
 enum sl_states_t slCommState = SL_RESET;
@@ -116,6 +130,8 @@ enum sl_states_t slCommNextState = SL_RESET;
 
 /**< Declaring an instance of RTC1 Peripheral. */
 const nrf_drv_rtc_t rtc1 = NRF_DRV_RTC_INSTANCE(1);
+/**< Declaring an instance of RTC2 Peripheral. */
+const nrf_drv_rtc_t rtc2 = NRF_DRV_RTC_INSTANCE(2);
 
 /* Declaring an instance of TWIM1 Peripheral. */
 static const nrf_drv_twi_t twim1 = NRF_DRV_TWI_INSTANCE(BOARD_TWI);
@@ -123,13 +139,23 @@ static const nrf_drv_twi_t twim1 = NRF_DRV_TWI_INSTANCE(BOARD_TWI);
 /* Declaring an instance of SPIM0 Peripheral. */
 static const nrf_drv_spi_t spim0 = NRF_DRV_SPI_INSTANCE(BOARD_SPI);
 
-uint8_t rtcExpired = 0;
-uint8_t slBuffer[SL_BUFFER_LEN], rxIrq = 0;
-uint8_t rxDataLen = 0;
+uint8_t rtc1Expired = 0, rtc2Expired = 0;
+uint8_t slBuffer[SL_BUFFER_LEN];
+uint8_t slRxBuffer[SL_BUFFER_LEN];
+uint8_t slRespBuff[SL_BUFFER_LEN];
+uint8_t slRxDataLen = 0, slRespLen = 0;
 
 uint8_t slTxComp = 0, slRxComp = 0;
 
 //#define PROG_MODE_ASSET, define this macro to compile the prog for asset tracking mode. 
+
+enum swStates swUsrState = SW_RELEASED;
+uint8_t deviceMode = DEV_MODE_OFFLINE;
+
+/* Set to be around 10 secs */
+uint8_t wakeUpTime = 80;
+
+extern memhdr_t memHeader;
 
 /**
  * @brief Function for application main entry.
@@ -139,9 +165,10 @@ int main(void)
     enum app_states_t appState = APP_READY;
     uint32_t irqFlags;
     uint8_t txCounter = 0, slTxLen = 0, minCounter = 0;
-    app_pkt_t appData;
-    app_pkt_t app1MinBuff[6];
-    uint8_t slBuffIndex = 0;
+    app_pkt_t appData, tempAppData={};
+    app_pkt_t nvmPkt[RECS_PER_PAGE];
+    uint8_t nvmBIndex = 0, sendTime = 0;
+    uint8_t memFlag = 0, sleepCondition = 0, gpsValid = 0;
       
     enum ll_state loraState;
     enum ll_tx_state txState;
@@ -149,166 +176,289 @@ int main(void)
     
     /* Configure board. */
     InitPeripherals();
+
+    //GPSTest();
     
-    nrf_delay_ms(1000);
-
-    MemoryTest();
-
-    MemManTest();
+    /* Start 10 sec RTC */
+    nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_START);
 
     while (true)
     {
-        SlProcessComm();
-        //__SEV();
-        //__WFE();
+        /* Poll Online / Offline Switch 
+         * Run switch state machine 
+         */
+        CheckSwPress();
+        /* If switch pressed, toggle b/w online and offline modes */
+        if(swUsrState == SW_PRESSED)
+        {  
+            if(deviceMode == DEV_MODE_OFFLINE)
+            {
+                /* Record start time and send */
+                #warning "Time value hardcoded, read it from RTC."
+                memHeader.startHrs = 0x15;
+                memHeader.startMin = 0x22;
+                memHeader.startSec = 0x05;
+                memHeader.startDD = 0x08;
+                memHeader.startMM = 0x06;
+                memHeader.startYY = 0x18;
+                /* Record Start time */
+                MemManUpdateMBR();
+                sendTime = 1;
+                deviceMode = DEV_MODE_ONLINE;
+            }
+            else
+            {
+                /* Record end time and send */
+                memHeader.stopHrs = 0x16;
+                memHeader.stopMin = 0x45;
+                memHeader.stopSec = 0x24;
+                memHeader.stopDD = 0x08;
+                memHeader.stopMM = 0x06;
+                memHeader.stopYY = 0x18;
+                /* Record end time */
+                MemManUpdateMBR();
+                sendTime = 2;   
+                deviceMode = DEV_MODE_OFFLINE;
+            }
+            swUsrState = SW_RELEASED;
+        }
         
-        if(txCounter == 10)
+        SlProcessComm();
+        
+        if(deviceMode == DEV_MODE_ONLINE)
         {
-            ReadGPS(&appData.gpsPkt);
-            appData.batV = LC709GetRSOC();
-            
-            #if defined(TX_10SEC_TEST)
-                if(appData.gpsPkt.status)
+            /* Make use of RTC1 interrupt to generate 8s */
+            if(rtc1Expired)
+            {
+                ReadGPS(&appData.gpsPkt);
+                appData.batV = LC709GetRSOC();
+                if(appData.gpsPkt.status&0x01)
                 {
-                    slBuffer[0] = '$';
-                    slBuffer[1] = 0x02;
-                    /* Payload Length */
-                    slBuffer[2] = sizeof(appData) + 2;
-                    /* Number of Records */
-                    slBuffer[3] = 1;
-                    /* Indicating GPS Data Valid */
-                    slBuffer[4] = 0x01;
-                    memcpy(&slBuffer[5], &appData, sizeof(appData));
-                    slBuffer[5 + sizeof(appData)] = CalcChkSum(slBuffer, (5 + sizeof(appData)));
-                    slTxLen = 6 + sizeof(appData);
-                    
-                    nrf_gpio_pin_clear(LEDB_PIN);
-                    nrf_gpio_pin_set(LEDG_PIN);
+                    nrf_gpio_pin_toggle(LEDB_PIN);
+                    gpsValid = 1;
                 }
                 else
                 {
-                    slBuffer[0] = '$';
-                    slBuffer[1] = 0x02;
-                    /* Payload Length */
-                    slBuffer[2] = 3;
-                    /* Number of Records */
-                    slBuffer[3] = 1;
-                    /* Indicating GPS Data Invalid */
-                    slBuffer[4] = 0;
-                    slBuffer[5] = appData.batV;
-                    slBuffer[6] = CalcChkSum(slBuffer, 6);
-                    slTxLen = 7;
-                    
-                    nrf_gpio_pin_clear(LEDG_PIN);
+                    /* Turn off Blue LED */
                     nrf_gpio_pin_set(LEDB_PIN);
+                    gpsValid = 0;
                 }
-            #else                    
-                memcpy(&app1MinBuff[minCounter++], &appData, sizeof(appData));
-                if(minCounter == 6)
+                
+                /* This check will avoid race conditions */
+                if(minCounter<6)
                 {
-                    /* Transmit 6 records */
+                    minCounter++;
+                }
+                /*If GPS data valid */
+                if((gpsValid) && (minCounter!=6))
+                {
+                    memcpy(&nvmPkt[nvmBIndex++], &appData,sizeof(appData));
+                }
+                rtc1Expired = 0;
+            }
+
+            /* Transmit a record in 1 min on LORA */
+            if(minCounter == 6)
+            {
+                /* Send data on LORA if ready */
+                if(slCommState == SL_READY)
+                {
+                  /* 
+                   * Implement Tx state machine to test if Tx successful.
+                   * If Tx successful, do not save current pkt,
+                   * else save current pkt in memory.
+                   */
+
                     slBuffer[0] = '$';
                     slBuffer[1] = 0x02;
-                    //Index reserved for length
-                    //slBuffer[2] = sizeof(appData);
-                    /* Number of Records */
-                    slBuffer[3] = 6;
-                    /* Indicates GPS Data Valid / Invalid */
-                    slBuffer[4] = 0x00;
-                    slBuffIndex = 5;
-                    for(i = 0; i< 6; i++)
+
+                    /* If GPS data valid */
+                    if(gpsValid)
                     {
-                        if(app1MinBuff[i].gpsPkt.status)
-                        {
-                            slBuffer[4] |= (1<<i);
-                            memcpy(&slBuffer[slBuffIndex], &appData, sizeof(appData));
-                            slBuffIndex += sizeof(appData);
-                        }
-                        else
-                        {
-                            slBuffer[slBuffIndex++] = appData.batV;
-                        }
+                        /* Form Tx Pkt with GPS data */
+                        /* Payload length (appData - 2(hdr, ftr) + 1(noOfRecs)) */
+                        slBuffer[2] = (sizeof(appData) - 2) + 1;
+                        /* Number of Records */
+                        slBuffer[3] = 1;
+                        /* Exclude header and footer from app data while copying */
+                        memcpy(&slBuffer[4], &appData.batV, sizeof(appData) - 2);
+                        slBuffer[22] = CalcChkSum(slBuffer, 22);
+                        slTxLen = 23;
+                        /* Set save in mem flag */
+                        memFlag = 1;
+                    }
+                    else
+                    {
+                        /* Form Tx Pkt indicating no GPS data */
+                        /* Payload Length */
+                        slBuffer[2] = 1;
+                        /* Hard-coded byte to indicate no GPS */
+                        slBuffer[3] = 0xFF;
+                        slBuffer[4] = CalcChkSum(slBuffer, 4);
+                        slTxLen = 5;
                     }
                     
-                    slBuffer[slBuffIndex] = CalcChkSum(slBuffer, slBuffIndex);
-                    slTxLen = (slBuffIndex+1) + sizeof(appData);
-                    minCounter = 0;
+                    ll_message_send_ack(slBuffer, slTxLen);
+                    slTxLen = 0;
+                    slCommState = SL_TRANSMITTING;
                 }
-            #endif
-            txCounter = 0;
+                else
+                {
+                    /* If GPS data valid */
+                    if(gpsValid)
+                    {
+                        memcpy(&nvmPkt[nvmBIndex++], &appData,sizeof(appData));
+                    }
+                }
+                minCounter = 0;
+            }
         }
-
+        
+        /* Check for any incoming msgs on LORA */
         if(slCommState == SL_READY)
         {
-            nrf_gpio_pin_toggle(LEDR_PIN);
             ll_get_state(&loraState, &txState, &rxState);
-            //Read and clear IRQ Flags
+            /* Read and clear IRQ Flags */
             ll_irq_flags(0xFFFFFFFF, &irqFlags);
-            //if(irqFlags & IRQ_FLAGS_RX_DONE) //Interrupt received from LL module
             if(rxState == LL_RX_STATE_RECEIVED_MSG)
             {
                 slRxComp = 0;
                 slCommState = SL_RECEIVING;
-                //rxIrq = 0;
             }
-            else if(!slTxComp && !slRxComp)
+            nrf_gpio_pin_set(LEDR_PIN);
+        }
+        else
+        {
+            nrf_gpio_pin_clear(LEDR_PIN);
+        }
+        
+        if(sendTime&&(slCommState == SL_READY))
+        {
+            slBuffer[0] = '$';
+            slBuffer[1] = 0x02;
+
+            /* Form Tx Pkt with start / end time data */
+            /* Payload length (appData - 2(hdr, ftr) + 1(noOfRecs)) */
+            slBuffer[2] = (sizeof(tempAppData) - 2) + 1;
+            /* Number of Records */
+            slBuffer[3] = 1;
+            if(sendTime == 1)
             {
-                if(slTxLen)
-                {
-                    ll_message_send_ack(slBuffer, slTxLen);
-                    slTxLen = 0;
-                }
-                slCommState = SL_TRANSMITTING;
+                /* Indicates start time packet */
+                tempAppData.gpsPkt.status = (1<<3);
+                memcpy(&tempAppData.gpsPkt.hrs, &memHeader.startHrs, 6);
             }
+            else
+            {
+                /* Indicates end time packet */
+                tempAppData.gpsPkt.status = (1<<4);
+                memcpy(&tempAppData.gpsPkt.hrs, &memHeader.stopHrs, 6);
+            }
+
+            /* Exclude header and footer from app data while copying */
+            memcpy(&slBuffer[4], &tempAppData.batV, sizeof(tempAppData) - 2);
+            slBuffer[22] = CalcChkSum(slBuffer, 22);
+            slTxLen = 23;
+            
+            ll_message_send_ack(slBuffer, slTxLen);
+            slTxLen = 0;
+            slCommState = SL_TRANSMITTING;
+            
+            sendTime = 0;
+        }
+        
+        if(slRespLen&&(slCommState == SL_READY))
+        {
+            ll_message_send_ack(slRespBuff, slRespLen);
+            slRespLen = 0;
+            slCommState = SL_TRANSMITTING;
         }
 
         if(slRxComp)
         {
-            //Take Rx Completed action here.
+            /* Take Rx Completed action here. */
+            /* Parse LORA Rx Packet here */
+            ParseLoraRxPkt(slRxBuffer, slRxDataLen, slRespBuff, &slRespLen);
             slRxComp = 0;
         }
 
         if(slTxComp)
         {
-            //Take Tx completed action here. 
+            /* Take Tx completed action here  */
+            /* If memFlag is set and Tx failed, save to memory */
+            if(slTxComp == 2 && memFlag)
+            {
+                memcpy(&nvmPkt[nvmBIndex++], &appData,sizeof(appData));
+            }
+            memFlag = 0;
             slTxComp = 0;
         }
 
-        txCounter++;
-        nrf_delay_ms(1000);
+        /* Auto Sync RTC */
+        
+        /* Check if sufficient records are present and write to nv memory */
+        if(nvmBIndex == RECS_PER_PAGE)
+        {
+            MemManWriteRecs(&nvmPkt,nvmBIndex);
+            nvmBIndex = 0;
+        }  
+        
+        /* Sleep condition, add && ((!slTxComp) && (!slRxComp)) if required */
+        sleepCondition = (swUsrState==SW_RELEASED) && (slCommState == SL_READY);
+
+        /* Enter Low Power Mode */
+        if(sleepCondition)
+        {
+            EnterLowPower();
+        }
     }
 }
 
 /** @brief: Function for handling the RTC1 interrupts.
  * Triggered on COMPARE0 match.
  */
-static void rtc_handler(nrf_drv_rtc_int_type_t int_type)
+static void rtc1_handler(nrf_drv_rtc_int_type_t int_type)
 {
     if (int_type == NRF_DRV_RTC_INT_COMPARE0)
     {
-        //Clear the RTC counter reg
+        /* Clear the RTC counter reg */
         nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_CLEAR);
-        nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_STOP);
-        rtcExpired = 1;
+        nrf_drv_rtc_cc_set(&rtc1, 0, wakeUpTime,true);
+        rtc1Expired = 1;
     }
 }
 
-void SlIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+static void rtc2_handler(nrf_drv_rtc_int_type_t int_type)
 {
-    rxIrq = 1;
+    if (int_type == NRF_DRV_RTC_INT_COMPARE0)
+    {
+        /* Clear the RTC counter reg */
+        nrf_rtc_task_trigger(rtc2.p_reg, NRF_RTC_TASK_CLEAR);
+        /* Stop the RTC */
+        nrf_rtc_task_trigger(rtc2.p_reg, NRF_RTC_TASK_STOP);
+        rtc2Expired = 1;
+    }
+}
+
+static void SWIrqHandler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+{
+    /* Implement switch press function if any */
 }
 
 void InitPeripherals(void)
 {
     LfclkConfig();
-    RTC1Init();
+    RTCInit();
     ll_uart_init();
-    SlIrqInit();
+    SWIrqInit();
     TWIM1Init();
     SPIM0Init();
     
     /* Initialize Battery Gauge */
     LC709Init();
+    
+    nrf_delay_ms(1000);
+
     /* Init GPS, Set GPS Packet Filters */
     SetGNRMCFilter();
     /* Init Accelerometer */
@@ -340,10 +490,14 @@ void InitPeripherals(void)
     nrf_gpio_cfg_input(PGOOD_PIN, NRF_GPIO_PIN_NOPULL);
     /* NCHG Pin 1 when charging battery, 0 otherwise */
     nrf_gpio_cfg_input(NCHG_PIN, NRF_GPIO_PIN_NOPULL);
+    /* User switch pin*/
     nrf_gpio_cfg_input(SW_USR_PIN, NRF_GPIO_PIN_NOPULL);
 
     /* Select LORA Port for UART */
     nrf_gpio_pin_set(SEL_MUX_PIN);
+    
+    /* Initialize memory manager module */
+    MemManInit();
 }
 
 void LfclkConfig(void)
@@ -354,32 +508,46 @@ void LfclkConfig(void)
     nrf_drv_clock_lfclk_request(NULL);
 }
 
-void RTC1Init(void)
+void RTCInit(void)
 {
     uint32_t err_code;
 
-    //Initialize RTC instance for 1ms Tick
+    /* Initialize RTC1 instance for 125ms (8Hz) Tick */
     nrf_drv_rtc_config_t config = NRF_DRV_RTC_DEFAULT_CONFIG;
-    config.prescaler = 32;
-    err_code = nrf_drv_rtc_init(&rtc1, &config, rtc_handler);
+    config.prescaler = 4095;
+    err_code = nrf_drv_rtc_init(&rtc1, &config, rtc1_handler);
     APP_ERROR_CHECK(err_code);
 
-    //Power on RTC instance
+    /* Power on RTC instance */
     nrf_drv_rtc_enable(&rtc1);
     
     nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_STOP);
     nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_CLEAR);
-}
 
-void SlIrqInit(void)
-{
-    nrf_drv_gpiote_in_config_t config = GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
-    uint32_t err_code = NRF_SUCCESS;
-    
-    err_code = nrf_drv_gpiote_in_init(WAKE_STS_PIN, &config, SlIrqHandler);
+    /* Set compare channel 0 */
+    nrf_drv_rtc_cc_set(&rtc1, 0, wakeUpTime,true);
+
+    config.prescaler = 32;
+    err_code = nrf_drv_rtc_init(&rtc2, &config, rtc2_handler);
     APP_ERROR_CHECK(err_code);
 
-    nrf_drv_gpiote_in_event_enable(WAKE_STS_PIN, true);
+    /* Power on RTC instance */
+    nrf_drv_rtc_enable(&rtc2);
+    
+    nrf_rtc_task_trigger(rtc2.p_reg, NRF_RTC_TASK_STOP);
+    nrf_rtc_task_trigger(rtc2.p_reg, NRF_RTC_TASK_CLEAR);
+}
+
+void SWIrqInit(void)
+{
+    uint32_t err_code;
+
+    nrf_drv_gpiote_in_config_t config2 = GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
+    
+    err_code = nrf_drv_gpiote_in_init(SW_USR_PIN, &config2, SWIrqHandler);
+    APP_ERROR_CHECK(err_code);
+
+    nrf_drv_gpiote_in_event_enable(SW_USR_PIN, true);
 }
 
 void TWIM1Init(void)
@@ -403,7 +571,8 @@ void SPIM0Init(void)
     spi_config.miso_pin = SPIM0_MISO_PIN;
     spi_config.mosi_pin = SPIM0_MOSI_PIN;
     spi_config.sck_pin  = SPIM0_SCK_PIN;
-    spi_config.frequency = SPI_DEFAULT_FREQUENCY;
+    //spi_config.frequency = SPI_DEFAULT_FREQUENCY;
+    spi_config.frequency = NRF_DRV_SPI_FREQ_250K;
     err_code = nrf_drv_spi_init(&spim0, &spi_config, NULL, NULL);
     
     /* Manually Control SS Pin as nrfDrivers do not allow transfers more than 256 bytes */
@@ -452,9 +621,10 @@ void SlProcessComm(void)
             nrf_gpio_pin_clear(LEDR_PIN);
             rxErrCnt = 0;
             txErrCnt = 0;
-            //Set compare channel 0
-            nrf_drv_rtc_cc_set(&rtc1, 0, 2000,true);
-            nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_START);
+            rtc2Expired = 0;
+            /* Set compare channel 0 to overflow in 2 secs */
+            nrf_drv_rtc_cc_set(&rtc2, 0, 2000, true);
+            nrf_rtc_task_trigger(rtc2.p_reg, NRF_RTC_TASK_START);
             break;
         case SL_UNINITIALIZED:
             if(ll_antenna_set(SL_ANT_SELECTED)>=0)
@@ -538,13 +708,14 @@ void SlProcessComm(void)
                     {
                         case LL_TX_STATE_SUCCESS:
                             txErrCnt = 0;
-                            //Notify tx completed
+                            /* Notify tx completed */
                             slTxComp = 1;
                             slCommState = SL_READY;
                             break;
                         case LL_TX_STATE_ERROR:
                             txErrCnt++;
-                            //Notify the application that tx failed. 
+                            /* Notify the application that tx failed. */
+                            slTxComp = 2;
                             slCommState = SL_READY;
                             break;
                         case LL_TX_STATE_TRANSMITTING:
@@ -553,9 +724,10 @@ void SlProcessComm(void)
                 }
                 else if (moduleStatus == LL_STATE_IDLE_DISCONNECTED)
                 {
-                        txErrCnt++;
-                        //Notify the application that tx failed. 
-                        slCommState = SL_READY;
+                    txErrCnt++;
+                    /* Notify the application that tx failed. */
+                    slTxComp = 2;
+                    slCommState = SL_READY;
                 }
                 else if (moduleStatus == LL_STATE_INITIALIZING)
                 {
@@ -564,11 +736,15 @@ void SlProcessComm(void)
                 else 
                 {
                     //state == LL_STATE_ERROR or NaN. Reset the module.
+                    /* Notify the application that tx failed. */
+                    slTxComp = 2;
                     slCommState = SL_ERROR;
                 }
             }
             else
             {
+                /* Notify the application that tx failed. */
+                slTxComp = 2;
                 slCommState = SL_ERROR;
             }
             break;
@@ -581,7 +757,7 @@ void SlProcessComm(void)
                 }
                 else if (rxStatus == LL_RX_STATE_RECEIVED_MSG)
                 {
-                    if(ll_retrieve_message(slBuffer, &rxDataLen, NULL, NULL)>=0)
+                    if(ll_retrieve_message(slRxBuffer, &slRxDataLen, NULL, NULL)>=0)
                     {
                         rxErrCnt = 0;
                         //Indicate Rx Success.
@@ -589,35 +765,42 @@ void SlProcessComm(void)
                     }
                     else
                     {
+                        /* Indicate Rx Failure */
+                        slRxComp = 2;
                         rxErrCnt++;
                     }
                     slCommState = SL_READY;
                 }
                 else //state error
                 {
+                    /* Indicate Rx Failure */
+                    slRxComp = 2;
                     slCommState = SL_ERROR;
                 }
             }
             else
             {
+                /* Indicate Rx Failure */
+                slRxComp = 2;
                 slCommState = SL_ERROR;
             }
             break;
         case SL_WAITING:
-            if(rtcExpired)
+            if(rtc2Expired)
             {
-                rtcExpired = 0;
+                rtc2Expired = 0;
                 slCommState = slCommNextState;
-                nrf_gpio_pin_set(LEDR_PIN);
+                //nrf_gpio_pin_set(LEDR_PIN);
             }
             break;
         case SL_ERROR:
-            //Reset module and try to re-initialize
+            /* Reset module and try to re-initialize */
             slCommState = SL_WAITING;
             slCommNextState = SL_RESET;
-            //Set compare channel 0
-            nrf_drv_rtc_cc_set(&rtc1, 0, 5000,true);
-            nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_START);
+            rtc2Expired = 0;
+            /* Set compare channel 0 */
+            nrf_drv_rtc_cc_set(&rtc2, 0, 5000,true);
+            nrf_rtc_task_trigger(rtc2.p_reg, NRF_RTC_TASK_START);
             break;
     }
 }
@@ -630,6 +813,70 @@ uint8_t CalcChkSum(uint8_t *buff, uint8_t len)
         chkSum += buff[i];
     }
     return chkSum;
+}
+
+void CheckSwPress(void)
+{
+    static uint16_t count;
+    switch(swUsrState)
+    {
+        case SW_RELEASED:
+            if(!nrf_gpio_pin_read(SW_USR_PIN))
+            {
+                swUsrState = SW_DETECTING;
+                count = 0;
+            }
+            break;
+        case SW_DETECTING:
+            nrf_delay_ms(5);
+            if(!nrf_gpio_pin_read(SW_USR_PIN))
+            {
+                count++;
+                if(count==5)
+                {
+                    nrf_gpio_pin_clear(LEDG_PIN);
+                    swUsrState = SW_DEBOUNCING;
+                }
+            }
+            else
+            {
+                swUsrState = SW_RELEASED;
+            }
+            break;
+        case SW_DEBOUNCING:
+            nrf_delay_ms(5);
+            if(nrf_gpio_pin_read(SW_USR_PIN))
+            {
+                swUsrState = SW_PRESSED;
+                nrf_gpio_pin_set(LEDG_PIN);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+void EnterLowPower(void)
+{
+    // Wait for an event.
+    __WFE();
+    // Clear the internal event register.
+    __SEV();
+    __WFE();
+}
+
+void ParseLoraRxPkt(uint8_t *rxBuff, uint8_t rxDataLen, uint8_t *respBuff, uint8_t *respLen)
+{
+    uint8_t buff[4] = {0x11, 0x22, 0x33, 0x44};
+    if(!memcmp(buff, rxBuff,4))
+    {
+        memcpy(respBuff, buff, 4);
+        *respLen = 4;
+    }
+    else
+    {
+        *respLen = 0;
+    }
 }
 
 /**

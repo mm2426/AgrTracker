@@ -54,10 +54,13 @@ Output/agrilinx_tracker\ Debug/Obj/main.o: \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_gpiote.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_gpio.h \
  C:/Program\ Files/SEGGER/SEGGER\ Embedded\ Studio\ for\ ARM\ 3.34/include/stdlib.h \
+ d:\nrf5_sdk14\components\libraries\pwr_mgmt\nrf_pwr_mgmt.h \
+ d:\nrf5_sdk14\components\libraries\experimental_section_vars\nrf_section_iter.h \
+ d:\nrf5_sdk14\components\libraries\experimental_section_vars\nrf_section.h \
+ d:\nrf5_sdk14\components\libraries\util\app_util.h \
  d:\nrf5_sdk14\components\libraries\experimental_log\nrf_log.h \
  d:\nrf5_sdk14\components\libraries\experimental_section_vars\nrf_section.h \
  d:\nrf5_sdk14\components\libraries\experimental_log\src\nrf_log_internal.h \
- d:\nrf5_sdk14\components\libraries\util\app_util.h \
  d:\nrf5_sdk14\components\boards\boards.h \
  d:\nrf5_sdk14\components\boards\agrilinx_bl652.h \
  ../../../ifc_lib/inc/ifc_struct_defs.h \

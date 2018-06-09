@@ -10,6 +10,7 @@
   #include "nrf_drv_clock.h"
   #include "nrf_drv_rtc.h"
   #include "nrf_drv_gpiote.h"
+  #include "nrf_pwr_mgmt.h"
   #include "ifc_struct_defs.h"
   #include "ll_ifc_consts.h"
   #include "ll_ifc_symphony.h"
@@ -18,6 +19,7 @@
   #include "lis3dshtr.h"
   #include "mcp7940m.h"
   #include "w25q32.h"
+  //#include "sst25vf016b.h"
   #include "lc709203f.h"
   #include "memmanager.h"
   #include "appconfig.h"
@@ -32,4 +34,5 @@
   void GaugeTest(void);
   void ConsoleTest(void);
   void LoraTest(void);
+  void LowPowerTest(void);
 #endif

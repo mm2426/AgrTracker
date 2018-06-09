@@ -57,6 +57,10 @@ Output/agrilinx_tracker\ Debug/Obj/testsuite.o: \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_rtc.h \
  d:\nrf5_sdk14\components\drivers_nrf\gpiote\nrf_drv_gpiote.h \
  d:\nrf5_sdk14\components\drivers_nrf\hal\nrf_gpiote.h \
+ d:\nrf5_sdk14\components\libraries\pwr_mgmt\nrf_pwr_mgmt.h \
+ d:\nrf5_sdk14\components\libraries\experimental_section_vars\nrf_section_iter.h \
+ d:\nrf5_sdk14\components\libraries\experimental_section_vars\nrf_section.h \
+ d:\nrf5_sdk14\components\libraries\util\app_util.h \
  ../../../ifc_lib/inc/ifc_struct_defs.h \
  ../../../ifc_lib/inc/ll_ifc_consts.h \
  ../../../ifc_lib/inc/ll_ifc_symphony.h ../../../ifc_lib/inc/ll_ifc.h \

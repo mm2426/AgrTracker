@@ -17,10 +17,10 @@ uint8_t txBusy = 0, rxDone = 0;
 
 uint8_t rxActualBuff[RX_BUFF_SIZE], rxBuffIndex = 0, rxBuffLen = 0;
 
-/**< Declaring an instance of nrf_drv_rtc for RTC1. */
-static const nrf_drv_rtc_t rtc1 = NRF_DRV_RTC_INSTANCE(1);
+/**< Declaring an instance of nrf_drv_rtc for RTC2. */
+static const nrf_drv_rtc_t rtc2 = NRF_DRV_RTC_INSTANCE(2);
 static nrf_ppi_channel_t ppiRTCChan;
-extern uint8_t rtcExpired;
+extern uint8_t rtc2Expired;
 
 void ppi_init(void)
 {
@@ -43,7 +43,7 @@ void ppi_init(void)
     //Bind Tasks and Events through PPI
     err_code = nrf_drv_ppi_channel_assign(ppiRTCChan,
                                           nrf_drv_gpiote_in_event_addr_get(RX_PIN),
-                                          nrf_drv_rtc_task_address_get(&rtc1,NRF_RTC_TASK_CLEAR));
+                                          nrf_drv_rtc_task_address_get(&rtc2,NRF_RTC_TASK_CLEAR));
     APP_ERROR_CHECK(err_code);
 
     err_code = nrf_drv_ppi_channel_enable(ppiRTCChan);
@@ -106,14 +106,14 @@ void transport_read_actual(void)
 //    nrf_delay_ms(1);
 
     rxDone = 0;
-    rtcExpired = 0;
+    rtc2Expired = 0;
 
     ret_code_t err_code = nrf_drv_uart_rx(&uart_driver_instance, rxActualBuff, RX_BUFF_SIZE);
     //Set compare channel 0
-    nrf_drv_rtc_cc_set(&rtc1, 0, RX_TIMEOUT_MS, true);
-    nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_START);
+    nrf_drv_rtc_cc_set(&rtc2, 0, RX_TIMEOUT_MS, true);
+    nrf_rtc_task_trigger(rtc2.p_reg, NRF_RTC_TASK_START);
 
-    while(!rtcExpired);
+    while(!rtc2Expired);
     nrf_drv_uart_rx_abort(&uart_driver_instance);
     
     while(!rxDone);

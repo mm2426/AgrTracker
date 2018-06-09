@@ -6,7 +6,7 @@
     #define  APP_QOS                    15
     #define  SL_BUFFER_LEN              250
 
-    #define  TX_10SEC_TEST              1
+    //#define  TX_10SEC_TEST              1
 
     //#define  SL_EVBOARD_RST             1
     /* To Select External UFL Antenna */
@@ -37,8 +37,15 @@
         APP_RECEIVING
     };
     
-    #define APP_PKT_HDR   0xC0
-    #define APP_PKT_FTR   0xDE
+    /* Switch states */
+    enum swStates
+    {
+       SW_RELEASED, SW_DETECTING, SW_DEBOUNCING, SW_PRESSED
+    };
+
+    
+    #define APP_PKT_HDR             0xC0
+    #define APP_PKT_FTR             0xDE
     struct app_pkt_t{
         uint8_t header;
         uint8_t batV;
@@ -46,5 +53,22 @@
         uint8_t footer;
     }__attribute__((packed));
     typedef struct app_pkt_t app_pkt_t;
+    
+    struct memhdr_t{
+        /* "AGRILINX" */
+        char id[8];
+        uint32_t  memBaseAddr, rPtr, wPtr, nRecs;
+        uint8_t startHrs, startMin,startSec;
+        uint8_t startDD, startMM,startYY;
+        uint8_t stopHrs, stopMin, stopSec;
+        uint8_t stopDD, stopMM, stopYY;
+        uint8_t updateFreq, retryCount, accelRange;
+        uint16_t accelTh;
+    }__attribute__((packed));
+    typedef struct memhdr_t memhdr_t;
+
+    #define DEV_MODE_OFFLINE        0
+    #define DEV_MODE_ONLINE         1
+    
 
 #endif
