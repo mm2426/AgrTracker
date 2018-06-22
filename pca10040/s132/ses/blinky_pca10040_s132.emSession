@@ -2,7 +2,9 @@
 <session>
  <Bookmarks/>
  <Breakpoints groups="Breakpoints" active_group="Breakpoints">
-  <Exceptions set="MemManage;UsageFault_Coprocessor;UsageFault_CheckingError;UsageFault_StateError;BusFault;ExceptionEntryReturnFault;HardFault"/>
+  <BreakpointListItem trigger="" line="535" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="2" filename="../../../main.c" useHWbreakpoint="false"/>
+  <BreakpointListItem trigger="" line="129" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="2" filename="../../../peripheral_drivers/src/memmanager.c" useHWbreakpoint="false"/>
+  <BreakpointListItem trigger="" line="65" counter="0" hardwareBreakpoint="" isFunctionBreakpoint="false" action="" expression="" group="Breakpoints" type="Breakpoint" state="2" filename="../../../peripheral_drivers/src/memmanager.c" useHWbreakpoint="false"/>
  </Breakpoints>
  <ExecutionProfileWindow/>
  <FrameBufferWindow>
@@ -51,14 +53,15 @@
  </TraceWindow>
  <Watch1>
   <Watches active="1" update="Never">
-   <Watchpoint numelements="100" expression="gpsData" evalMode="2" name="gpsData" radix="16" linenumber="414" filename="../../../main.c" list=""/>
+   <Watchpoint numelements="100" expression="gpsData" evalMode="2" name="gpsData" radix="16" linenumber="547" filename="../../../main.c" list=""/>
    <Watchpoint numelements="3" expression="oriVals" evalMode="2" name="oriVals" radix="-1" linenumber="14" filename="../../../testsuite/src/testsuite.c" list=""/>
    <Watchpoint numelements="0" expression="voltage" evalMode="0" name="voltage" radix="10" linenumber="212" filename="../../../testsuite/src/testsuite.c" list=""/>
    <Watchpoint numelements="0" expression="rsoc" evalMode="0" name="rsoc" radix="10" linenumber="212" filename="../../../testsuite/src/testsuite.c" list=""/>
    <Watchpoint numelements="0" expression="pkt" evalMode="1" name="pkt" radix="-1" linenumber="26" filename="../../../testsuite/src/testsuite.c" list=""/>
    <Watchpoint numelements="12" expression="rPkt" evalMode="2" name="rPkt" radix="-1" linenumber="184" filename="../../../testsuite/src/testsuite.c" list=""/>
    <Watchpoint numelements="100" expression="buff" evalMode="2" name="buff" radix="-1" linenumber="43" filename="../../../peripheral_drivers/src/ubloxm8.c" list=""/>
-   <Watchpoint numelements="0" expression="appData" evalMode="0" name="appData" radix="-1" linenumber="253" filename="../../../main.c" list=""/>
+   <Watchpoint numelements="0" expression="appData" evalMode="0" name="appData" radix="-1" linenumber="280" filename="../../../main.c" list=""/>
+   <Watchpoint numelements="0" expression="memHeader" evalMode="0" name="memHeader" radix="-1" linenumber="65" filename="../../../peripheral_drivers/src/memmanager.c" list=""/>
   </Watches>
  </Watch1>
  <Watch2>
@@ -71,16 +74,16 @@
   <Watches active="0" update="Never"/>
  </Watch4>
  <Files>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="381" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../main.c" debugPath="../../../main.c" selected="1" top="365" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="32" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../testsuite/src/testsuite.c" debugPath="../../../testsuite/src/testsuite.c" selected="0" top="30" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="26" y="1037" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../main.c" debugPath="../../../main.c" selected="1" top="1021" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="18" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../testsuite/src/testsuite.c" debugPath="../../../testsuite/src/testsuite.c" selected="0" top="16" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="12" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../testsuite/inc/testsuite.h" debugPath="../../../testsuite/inc/testsuite.h" selected="0" top="8" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="16" y="60" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../appconfig.h" debugPath="../../../appconfig.h" selected="0" top="45" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="45" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/src/memmanager.c" debugPath="../../../peripheral_drivers/src/memmanager.c" selected="0" top="34" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="890" useTextEdit="1" useBinaryEdit="0" left="0" path="../config/sdk_config.h" debugPath="../config/sdk_config.h" selected="0" top="888" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="30" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../appconfig.h" debugPath="../../../appconfig.h" selected="0" top="28" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="2" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/src/memmanager.c" debugPath="../../../peripheral_drivers/src/memmanager.c" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="815" useTextEdit="1" useBinaryEdit="0" left="0" path="../config/sdk_config.h" debugPath="../config/sdk_config.h" selected="0" top="813" codecName="Default"/>
   <SessionOpenFile windowGroup="DockEditLeft" x="0" y="96" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../../../../components/boards/agrilinx_bl652.h" debugPath="../../../../../../components/boards/agrilinx_bl652.h" selected="0" top="78" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="115" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../ifc_lib/src/ll_ifc_transport_mcu.c" debugPath="../../../ifc_lib/src/ll_ifc_transport_mcu.c" selected="0" top="103" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="45" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/src/ubloxm8.c" debugPath="../../../peripheral_drivers/src/ubloxm8.c" selected="0" top="43" codecName="Default"/>
-  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="23" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/inc/ubloxm8.h" debugPath="../../../peripheral_drivers/inc/ubloxm8.h" selected="0" top="0" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="47" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../peripheral_drivers/src/ubloxm8.c" debugPath="../../../peripheral_drivers/src/ubloxm8.c" selected="0" top="23" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="194" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../../../../components/drivers_nrf/clock/nrf_drv_clock.c" debugPath="../../../../../../components/drivers_nrf/clock/nrf_drv_clock.c" selected="0" top="189" codecName="Default"/>
+  <SessionOpenFile windowGroup="DockEditLeft" x="0" y="329" useTextEdit="1" useBinaryEdit="0" left="0" path="../../../../../../components/drivers_nrf/hal/nrf_clock.h" debugPath="../../../../../../components/drivers_nrf/hal/nrf_clock.h" selected="0" top="316" codecName="Default"/>
  </Files>
- <ARMCrossStudioWindow activeProject="agrilinx_tracker" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" debugSearchFileMap="" fileDialogInitialDirectory="D:/nRF5_SDK14/components/libraries/pwr_mgmt" debugSearchPath="" autoConnectCapabilities="3711"/>
+ <ARMCrossStudioWindow activeProject="agrilinx_tracker" fileDialogDefaultFilter="*.c" autoConnectTarget="J-Link" buildConfiguration="Debug" debugSearchFileMap="" fileDialogInitialDirectory="D:/nRF5_SDK14/components/libraries/pwr_mgmt" debugSearchPath="" autoConnectCapabilities="3199"/>
 </session>

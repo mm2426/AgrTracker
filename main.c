@@ -123,6 +123,10 @@ void EnterLowPower(void);
  */
 void ParseLoraRxPkt(uint8_t *rxBuff, uint8_t rxDataLen, uint8_t *respBuff, uint8_t *respLen);
 
+/** @brief Auto-syncs time from GPS to RTC.
+ */
+void AutoSyncRTC(void);
+
 /** @brief Variables tracking LORA comm state.
  */
 enum sl_states_t slCommState = SL_RESET;
@@ -143,42 +147,43 @@ uint8_t rtc1Expired = 0, rtc2Expired = 0;
 uint8_t slBuffer[SL_BUFFER_LEN];
 uint8_t slRxBuffer[SL_BUFFER_LEN];
 uint8_t slRespBuff[SL_BUFFER_LEN];
+uint8_t uplBuffer[SL_BUFFER_LEN];
 uint8_t slRxDataLen = 0, slRespLen = 0;
-
 uint8_t slTxComp = 0, slRxComp = 0;
-
-//#define PROG_MODE_ASSET, define this macro to compile the prog for asset tracking mode. 
-
 enum swStates swUsrState = SW_RELEASED;
 uint8_t deviceMode = DEV_MODE_OFFLINE;
-
 /* Set to be around 10 secs */
 uint8_t wakeUpTime = 80;
-
 extern memhdr_t memHeader;
+app_pkt_t appData;
+uint8_t uploadRecs = 0;
+uint32_t uploadCount = 0;
 
 /**
  * @brief Function for application main entry.
  */
 int main(void)
 {
-    enum app_states_t appState = APP_READY;
     uint32_t irqFlags;
     uint8_t txCounter = 0, slTxLen = 0, minCounter = 0;
-    app_pkt_t appData, tempAppData={};
+    app_pkt_t tempAppData={};
     app_pkt_t nvmPkt[RECS_PER_PAGE];
+    app_pkt_t uploadPkt[RECS_PER_PAGE];
+    uint8_t uplPktLen = 0, uplPktIndex = 0, i = 0;
+    uint8_t failCount = 0;
     uint8_t nvmBIndex = 0, sendTime = 0;
-    uint8_t memFlag = 0, sleepCondition = 0, gpsValid = 0;
+    uint8_t memFlag = 0, memOffUpdate = 0, sleepCondition = 0, gpsValid = 0;
+    uint8_t tBuff[4];
       
     enum ll_state loraState;
     enum ll_tx_state txState;
     enum ll_rx_state rxState;
     
+    enum uploadStates recUplState = UPLOAD_INIT;
+    
     /* Configure board. */
     InitPeripherals();
 
-    //GPSTest();
-    
     /* Start 10 sec RTC */
     nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_START);
 
@@ -194,13 +199,23 @@ int main(void)
             if(deviceMode == DEV_MODE_OFFLINE)
             {
                 /* Record start time and send */
-                #warning "Time value hardcoded, read it from RTC."
-                memHeader.startHrs = 0x15;
-                memHeader.startMin = 0x22;
-                memHeader.startSec = 0x05;
-                memHeader.startDD = 0x08;
-                memHeader.startMM = 0x06;
-                memHeader.startYY = 0x18;
+                
+                MCP79GetTime(tBuff);
+                memHeader.startHrs = tBuff[2];
+                memHeader.startMin = tBuff[1];
+                memHeader.startSec = tBuff[0];
+                MCP79GetFullDate(tBuff);
+                memHeader.startDD = tBuff[1];
+                memHeader.startMM = tBuff[2];
+                memHeader.startYY = tBuff[3];
+                /* Clear End time variable */
+                memHeader.stopHrs = 0x00;
+                memHeader.stopMin = 0x00;
+                memHeader.stopSec = 0x00;
+                memHeader.stopDD = 0x00;
+                memHeader.stopMM = 0x00;
+                memHeader.stopYY = 0x00;
+                
                 /* Record Start time */
                 MemManUpdateMBR();
                 sendTime = 1;
@@ -209,16 +224,28 @@ int main(void)
             else
             {
                 /* Record end time and send */
-                memHeader.stopHrs = 0x16;
-                memHeader.stopMin = 0x45;
-                memHeader.stopSec = 0x24;
-                memHeader.stopDD = 0x08;
-                memHeader.stopMM = 0x06;
-                memHeader.stopYY = 0x18;
-                /* Record end time */
-                MemManUpdateMBR();
+                
+                MCP79GetTime(tBuff);
+                memHeader.stopHrs = tBuff[2];
+                memHeader.stopMin = tBuff[1];
+                memHeader.stopSec = tBuff[0];
+                MCP79GetFullDate(tBuff);
+                memHeader.stopDD = tBuff[1];
+                memHeader.stopMM = tBuff[2];
+                memHeader.stopYY = tBuff[3];
+                
+                /* Update current GPS data buffer in memory */
+                if(nvmBIndex)
+                {
+                    MemManWriteRecs(&nvmPkt,nvmBIndex);
+                    nvmBIndex = 0;
+                }
+
+                /* No need to call this as write recs is called here */
+                //MemManUpdateMBR();
                 sendTime = 2;   
                 deviceMode = DEV_MODE_OFFLINE;
+
             }
             swUsrState = SW_RELEASED;
         }
@@ -252,6 +279,8 @@ int main(void)
                 /*If GPS data valid */
                 if((gpsValid) && (minCounter!=6))
                 {
+                    appData.header = APP_PKT_HDR;
+                    appData.footer = APP_PKT_FTR;
                     memcpy(&nvmPkt[nvmBIndex++], &appData,sizeof(appData));
                 }
                 rtc1Expired = 0;
@@ -307,6 +336,8 @@ int main(void)
                     /* If GPS data valid */
                     if(gpsValid)
                     {
+                        appData.header = APP_PKT_HDR;
+                        appData.footer = APP_PKT_FTR;
                         memcpy(&nvmPkt[nvmBIndex++], &appData,sizeof(appData));
                     }
                 }
@@ -342,6 +373,8 @@ int main(void)
             slBuffer[2] = (sizeof(tempAppData) - 2) + 1;
             /* Number of Records */
             slBuffer[3] = 1;
+            /* Clear temp var */
+            memset(&tempAppData,0, sizeof(tempAppData));
             if(sendTime == 1)
             {
                 /* Indicates start time packet */
@@ -354,7 +387,9 @@ int main(void)
                 tempAppData.gpsPkt.status = (1<<4);
                 memcpy(&tempAppData.gpsPkt.hrs, &memHeader.stopHrs, 6);
             }
-
+            
+            /* Get current battery level */
+            tempAppData.batV = LC709GetRSOC();
             /* Exclude header and footer from app data while copying */
             memcpy(&slBuffer[4], &tempAppData.batV, sizeof(tempAppData) - 2);
             slBuffer[22] = CalcChkSum(slBuffer, 22);
@@ -381,21 +416,119 @@ int main(void)
             ParseLoraRxPkt(slRxBuffer, slRxDataLen, slRespBuff, &slRespLen);
             slRxComp = 0;
         }
-
-        if(slTxComp)
+        
+        if(recUplState!=UPLOAD_TXRESP)
         {
-            /* Take Tx completed action here  */
-            /* If memFlag is set and Tx failed, save to memory */
-            if(slTxComp == 2 && memFlag)
+            if(slTxComp)
             {
-                memcpy(&nvmPkt[nvmBIndex++], &appData,sizeof(appData));
+                /* Take Tx completed action here  */
+                /* If memFlag is set and Tx failed, save to memory */
+                if(slTxComp == 2 && memFlag)
+                {
+                    appData.header = APP_PKT_HDR;
+                    appData.footer = APP_PKT_FTR;
+                    memcpy(&nvmPkt[nvmBIndex++], &appData,sizeof(appData));
+                }
+                memFlag = 0;
+                slTxComp = 0;
             }
-            memFlag = 0;
-            slTxComp = 0;
         }
 
+        /* Upload records state machine */
+        switch(recUplState)
+        {
+            case UPLOAD_INIT:
+                if(uploadRecs)
+                {
+                    if((uploadCount == 0xFF) || (uploadCount > memHeader.nRecs))
+                    {
+                        /* Transfer all records */
+                        uploadCount = memHeader.nRecs;
+                    }
+                    recUplState = UPLOAD_PKTIZE;
+                }
+                break;
+            case UPLOAD_PKTIZE:
+                if(uploadCount > 0)
+                {
+                    MemManReadPage((uint8_t*)&uploadPkt, &uplPktLen, 0);
+                    //MemManPeekPage((uint8_t*)&uploadPkt, &uplPktLen);
+                    if(uplPktLen)
+                    {
+                        uplBuffer[0] = '$';
+                        uplBuffer[1] = 0x02;
+                        /* Number of Records */
+                        uplBuffer[3] = uplPktLen;
+                        uplPktIndex = 4;
+                        for(i = 0; i < uplPktLen; i++)
+                        {
+                            /* Exclude header and footer from app data while copying */
+                            memcpy(&uplBuffer[uplPktIndex], &uploadPkt[i].batV, sizeof(uploadPkt[i]) - 2);
+                            uplPktIndex += sizeof(app_pkt_t) - 2;
+                        }
+                        /* Payload length */
+                        uplBuffer[2] = uplPktIndex - 3;
+                        uplBuffer[uplPktIndex] = CalcChkSum(uplBuffer, uplPktIndex);
+                        uplPktIndex++;
+                        uplPktLen = uplPktIndex;
+                        recUplState = UPLOAD_WAITRDY;
+                        failCount = 0;
+                    }
+                    else
+                    {
+                        uploadRecs = 0;
+                        recUplState = UPLOAD_INIT;
+                    }
+                }
+                else
+                {
+                    uploadRecs = 0;
+                    recUplState = UPLOAD_INIT;
+                }
+                break;
+            case UPLOAD_WAITRDY:
+                if(slCommState == SL_READY)
+                {
+                    ll_message_send_ack(uplBuffer, uplPktLen);
+                    slCommState = SL_TRANSMITTING;
+                    recUplState = UPLOAD_TXRESP;
+                }
+                break;
+            case UPLOAD_TXRESP:
+                if(slTxComp)
+                {
+                    /* Take Tx completed successfully  */
+                    if(slTxComp == 1)
+                    {
+                        /* Delete page from memory */
+                        MemManReadPage((uint8_t*)&uploadPkt, &uplPktLen, 1);
+                        uplPktLen = 0;
+                        uploadCount--;
+                        recUplState = UPLOAD_PKTIZE;
+                    }
+                    else if(slTxComp == 2)
+                    {
+                        /* If Tx failed, retransmit */
+                        failCount++;
+                        if(failCount == 2)
+                        {
+                            uploadRecs = 0;
+                            recUplState = UPLOAD_INIT;
+                        }
+                        else
+                        {
+                            recUplState = UPLOAD_WAITRDY;
+                        }
+                    }
+                    slTxComp = 0;
+                }  
+                break;
+            case UPLOAD_TIMEOUT:
+                break;
+        }
         /* Auto Sync RTC */
-        
+        AutoSyncRTC();
+
         /* Check if sufficient records are present and write to nv memory */
         if(nvmBIndex == RECS_PER_PAGE)
         {
@@ -867,15 +1000,133 @@ void EnterLowPower(void)
 
 void ParseLoraRxPkt(uint8_t *rxBuff, uint8_t rxDataLen, uint8_t *respBuff, uint8_t *respLen)
 {
-    uint8_t buff[4] = {0x11, 0x22, 0x33, 0x44};
-    if(!memcmp(buff, rxBuff,4))
+    uint8_t chkSum = 0, rxChkSum = 0;
+    uint8_t dLen = 0, buffIndex = 0;
+    *respLen = 0;
+    //gps_pkt_t statGps;
+    
+    if (rxBuff[0] == '$')
     {
-        memcpy(respBuff, buff, 4);
-        *respLen = 4;
+        /* Calc Chksum */
+        chkSum = CalcChkSum(rxBuff, rxDataLen-1);
+        /* If Chksum Matched */
+        if (chkSum == rxBuff[rxDataLen - 1])
+        {
+            dLen = rxBuff[2];
+
+            /* Check Pkt ID */
+            switch (rxBuff[1])
+            {
+                case 0x01:
+                    /* Get status packet request */
+                    if ((dLen==1)&&(rxBuff[3] == 0xAB))
+                    {
+                        /* Generate Status response */
+                        respBuff[0] = '$';
+                        respBuff[1] = 0x01;
+                        
+                        /* Copy start time */
+                        buffIndex = 3;
+                        /* Indicate Device mode (online / offline) */
+                        respBuff[buffIndex++] = deviceMode;
+                        //memcpy(&respBuff[buffIndex], &memHeader.startHrs, 6);
+                        //buffIndex += 6;
+                        
+                        /* Read Bat Level */
+                        respBuff[buffIndex++] = LC709GetRSOC();
+                        /* Read current GPS record */
+                        //ReadGPS(&appData.gpsPkt);
+                        /* If GPS data valid */
+                        if(appData.gpsPkt.status&0x01)
+                        {
+                            memcpy(&respBuff[buffIndex], &appData.gpsPkt, sizeof(gps_pkt_t));
+                            buffIndex += sizeof(gps_pkt_t);
+                        }
+                        else
+                        {
+                            /* Indicates GPS data invalid */
+                            respBuff[buffIndex++] = 0xFF;
+                        }
+                        
+                        /* Copy nRecs from mem buffer */
+                        memcpy(&respBuff[buffIndex], &memHeader.nRecs, sizeof(memHeader.nRecs));
+                        buffIndex += sizeof(memHeader.nRecs);
+                        //memcpy otherParams
+                        
+                        /* set appropriate data len here */
+                        respBuff[2] = buffIndex - 3;
+
+                        /* Calculate checksum */
+                        respBuff[buffIndex] = CalcChkSum(respBuff, buffIndex);
+                        buffIndex++;
+                        
+                        /* Set respLen */
+                        *respLen = buffIndex;
+                    }
+                    break;
+                case 0x02:
+                    /* Get x records from DB request */
+                    if (dLen == 1)
+                    {
+                        /* Get all records / Get x page of records */
+                        /* Check if previous request is undergoing */
+                        if(uploadRecs)
+                        {
+                            /* Send busy response */
+                            respBuff[0] = '$';
+                            respBuff[1] = 0x02;
+                            respBuff[2] = 1;
+                            respBuff[3] = 0xBB;
+                            respBuff[4] = CalcChkSum(respBuff,4);
+                            *respLen = 5;
+                        }
+                        else
+                        {
+                            uploadRecs = 1;
+                            uploadCount = rxBuff[3]; 
+                        }
+                    }
+                    break;
+                case 0x03:
+                    /* Set parameter request */
+                    break;
+                case 0x04:
+                    /* Get parameter request */
+                    break;
+                case 0x05:
+                    /* BLE related requests */
+                    break;
+                default:
+                    break;
+            }
+        }
     }
-    else
+}
+
+void AutoSyncRTC(void)
+{
+    uint8_t tBuff[4];
+
+    /* If GPS pkt valid */
+    if(appData.gpsPkt.status&0x01)
     {
-        *respLen = 0;
+        MCP79GetTime(tBuff);
+        
+        /* If minutes mismatch */
+        if(tBuff[1] != appData.gpsPkt.min)
+        {
+            tBuff[0] = appData.gpsPkt.sec;
+            tBuff[1] = appData.gpsPkt.min;
+            tBuff[2] = appData.gpsPkt.hrs;
+            MCP79SetTime(tBuff);
+            
+            /* Set Date */
+            tBuff[0] = 1; //Weekday
+            tBuff[1] = appData.gpsPkt.dd;
+            tBuff[2] = appData.gpsPkt.mm;
+            tBuff[3] = appData.gpsPkt.yy;
+            MCP79SetFullDate(tBuff);
+        }
     }
 }
 

@@ -6,8 +6,6 @@
     #define  APP_QOS                    15
     #define  SL_BUFFER_LEN              250
 
-    //#define  TX_10SEC_TEST              1
-
     //#define  SL_EVBOARD_RST             1
     /* To Select External UFL Antenna */
     #define  SL_ANT_UFL                 1
@@ -30,17 +28,16 @@
         SL_ERROR
     };
 
-    enum app_states_t
-    {
-        APP_READY,
-        APP_TRANSMITTING,
-        APP_RECEIVING
-    };
-    
     /* Switch states */
     enum swStates
     {
        SW_RELEASED, SW_DETECTING, SW_DEBOUNCING, SW_PRESSED
+    };
+    
+    /* Rec upload states */
+    enum uploadStates
+    {
+       UPLOAD_INIT, UPLOAD_PKTIZE, UPLOAD_WAITRDY, UPLOAD_TXRESP, UPLOAD_TIMEOUT
     };
 
     

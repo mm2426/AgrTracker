@@ -13,7 +13,9 @@
          * Status Bit definitions:
                     0 = 1 if valid.
                     1 = 1 if North, 0 if South.
-                    2 = 1 if East, 0 if West. 
+                    2 = 1 if East, 0 if West.
+                    3 = 1 if sending start time.
+                    4 = 1 if sending stop time.
          */
         uint8_t status;
         uint8_t hrs, min, sec;
