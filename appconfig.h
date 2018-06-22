@@ -39,8 +39,8 @@
     {
        UPLOAD_INIT, UPLOAD_PKTIZE, UPLOAD_WAITRDY, UPLOAD_TXRESP, UPLOAD_TIMEOUT
     };
-
     
+       
     #define APP_PKT_HDR             0xC0
     #define APP_PKT_FTR             0xDE
     struct app_pkt_t{
@@ -55,10 +55,6 @@
         /* "AGRILINX" */
         char id[8];
         uint32_t  memBaseAddr, rPtr, wPtr, nRecs;
-        uint8_t startHrs, startMin,startSec;
-        uint8_t startDD, startMM,startYY;
-        uint8_t stopHrs, stopMin, stopSec;
-        uint8_t stopDD, stopMM, stopYY;
         uint8_t updateFreq, retryCount, accelRange;
         uint16_t accelTh;
     }__attribute__((packed));
@@ -67,5 +63,14 @@
     #define DEV_MODE_OFFLINE        0
     #define DEV_MODE_ONLINE         1
     
+    /* Get instantaneous GPS pkt */
+    #define PARAM_GPS_ID            0x01
+    /* Online point update rate in 0.5 mins interval */
+    #define PARAM_UPDFREQ_ID        0x02
+    /* Accelerometer Range */
+    #define PARAM_ACCELRNG_ID       0x03
+    /* Accelerometer threshold */
+    #define PARAM_ACCELTHR_ID       0x04
+
 
 #endif

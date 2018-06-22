@@ -13,18 +13,21 @@
     #include "nrf_drv_spi.h"
     #include "nrf_gpio.h"
     #include "boards.h"
-    //#include "sst25vf016b.h"
     #include "w25q32.h"
     #include "appconfig.h"
 
     /** 
     * @brief Read MBR from flash. Acquire pointers to the first location in memory.
     * If writing first time, write default configuration to MBR.
-    * @param[in] nRecs, Returns number of records present in the memory.
     */
     void MemManInit(void);
-    uint32_t MemManGetRecCount(void);
     void MemManUpdateMBR(void);
+    /** 
+    * @brief Write buffer contents to the next free location in the memory.
+    * It performs a sector erase before writing if the page address is 0.
+    * @param[in] pkt, Buffer to be written in the memory.
+    * @param[in] len, Length of the buffer to be written in the memory.
+    */
     void MemManWriteRecs(void *pkt, uint8_t noOfRecs);
     void MemManReadPage(uint8_t *pkt, uint8_t *len, uint8_t delRec);
     void MemManRstPeekPtr(void);

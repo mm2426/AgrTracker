@@ -17,33 +17,15 @@ static uint32_t peekRptr;
 /** 
 * @brief Read MBR from flash. Acquire pointers to the first location in memory.
 * If writing first time, write default configuration to MBR.
-* @param[in] nRecs, Returns number of records present in the memory.
 */
 void MemManInit(void)
 {
-    //uint8_t buff[24]={};
-    //W25Q32CmdReadData(0x00000000, buff, sizeof(buff));
     W25Q32CmdReadData(0x00000000, (uint8_t *)&memHeader, sizeof(memHeader));
     
     /* Check if memory is formatted or not */
     #ifndef FORCE_PROG_FS_HEADER
-    /*if(!memcmp(&memHeader,"AGRILINX",8))
-    {
-        memBaseAddr = (((uint32_t)buff[9])<<8) | buff[8];
-        memBaseAddr |= (((uint32_t)buff[11])<<24) | (((uint32_t)buff[10])<<16);
-          
-        rPtr = (((uint32_t)buff[13])<<8) | buff[12];
-        rPtr |= (((uint32_t)buff[15])<<24) | (((uint32_t)buff[14])<<16);
-
-        wPtr = (((uint32_t)buff[17])<<8) | buff[16];
-        wPtr |= (((uint32_t)buff[19])<<24) | (((uint32_t)buff[18])<<16);
-
-        nRecs = (((uint32_t)buff[21])<<8) | buff[20];
-        nRecs |= (((uint32_t)buff[23])<<24) | (((uint32_t)buff[22])<<16);
-    }
-    else*/
-    /* If header is not present */
-    if(memcmp(&memHeader.id[0],"AGRILINX",8))
+        /* If header is not present */
+        if(memcmp(&memHeader.id[0],"AGRILINX",8))
     #endif
     {
         memcpy(&memHeader.id[0], "AGRILINX", 8);
@@ -51,12 +33,9 @@ void MemManInit(void)
         memHeader.memBaseAddr = 0x00001000;
         memHeader.rPtr = memHeader.wPtr = memHeader.memBaseAddr;
         memHeader.nRecs = 0;
+        /* Set default update frequency to 1 min */
+        memHeader.updateFreq = 6;
 
-        /*memcpy(&buff[8], &memBaseAddr, 4);
-        memcpy(&buff[12], &rPtr, 4);
-        memcpy(&buff[16], &wPtr, 4);
-        memcpy(&buff[20], &nRecs, 4);*/
-        
         /* Erase Sector 0 */
         W25Q32CmdEraseSector(0x00000000,1);
         /* Write MBR to Page 0 */
@@ -65,27 +44,10 @@ void MemManInit(void)
     peekRptr = memHeader.rPtr;
 }
 
-uint32_t MemManGetRecCount(void)
-{
-    return memHeader.nRecs;  
-}
-
 void MemManUpdateMBR(void)
 {
-    //uint8_t buff[24];
-
     /* Erase Sector 0 */
     W25Q32CmdEraseSector(0x00000000,1);
-
-    /*memcpy(buff, "AGRILINX", 8);
-    memcpy(&buff[8], &memBaseAddr, 4);
-    memcpy(&buff[12], &rPtr, 4);
-    memcpy(&buff[16], &wPtr, 4);
-    memcpy(&buff[20], &nRecs, 4);*/
-        
-
-    /* Wait for Erase operation to complete */
-    //while(W25Q32CmdIsBusy());
 
     /* Write MBR to Sector 0 */
     W25Q32CmdProgPage(0x00000000, (uint8_t *)&memHeader, sizeof(memHeader), 1);
