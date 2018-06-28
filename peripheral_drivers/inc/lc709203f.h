@@ -40,6 +40,7 @@
         void LC709Init(void);
         uint16_t LC709GetVoltage(void);
         uint16_t LC709GetRSOC(void);
+        uint16_t LC709GetITE(void);
         uint16_t LC709GetBatTemp(void);
         uint16_t LC709GetCurrDir(void);
         void LC709WriteReg(uint8_t regAddr, uint16_t regVal);

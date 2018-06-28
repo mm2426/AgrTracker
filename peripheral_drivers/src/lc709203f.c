@@ -7,18 +7,26 @@ void LC709Init(void)
 {
     /* Send 1st dummy command to wake up the device */
     LC709WriteReg(LC709_REG_POWER_MODE, 0x0001);
+    
+    nrf_delay_us(400);
+
     /* Select Continuous operation mode */
     LC709WriteReg(LC709_REG_POWER_MODE, 0x0001);
-    /* Select thermistor mode for temp reading */
-    LC709WriteReg(LC709_REG_STATUS, 0x0001);
-    /* Set thermistor B Value */
-    LC709WriteReg(LC709_REG_THERM_B, 3435);
+    
     /* Select for 1000mAh */
     LC709WriteReg(LC709_REG_APA, 0x0019);
     /* Select Battery Profile */
     LC709WriteReg(LC709_REG_CHANGE_PARAM, 0x0001);
+
     /* Init RSOC */
-    //LC709WriteReg(LC709_REG_INIT_RSOC, 0xAA55);
+//    LC709WriteReg(LC709_REG_INIT_RSOC, 0xAA55);
+//    nrf_delay_ms(1);
+
+    /* Select thermistor mode for temp reading */
+    LC709WriteReg(LC709_REG_STATUS, 0x0001);
+    /* Set thermistor B Value */
+    LC709WriteReg(LC709_REG_THERM_B, 3435);
+   
 }
 
 uint16_t LC709GetVoltage(void)
@@ -32,6 +40,13 @@ uint16_t LC709GetRSOC(void)
 {
     uint16_t rsoc;
     LC709ReadReg(LC709_REG_RSOC, &rsoc);
+    return rsoc;
+}
+
+uint16_t LC709GetITE(void)
+{
+    uint16_t rsoc;
+    LC709ReadReg(LC709_REG_ITE, &rsoc);
     return rsoc;
 }
 

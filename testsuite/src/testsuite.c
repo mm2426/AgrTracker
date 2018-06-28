@@ -202,14 +202,17 @@ void RTCTest(void)
 
 void GaugeTest(void)
 {
-    uint16_t voltage, rsoc;
+    uint16_t voltage = 0, rsoc1 = 0, rsoc2 = 0;
     
-    LC709Init();
+    //LC709Init();
     while(true)
     {
         nrf_gpio_pin_toggle(LEDB_PIN);
         voltage = LC709GetVoltage();
-        rsoc = LC709GetRSOC();
+        rsoc1 = 0;
+        rsoc1 = LC709GetRSOC();
+        //LC709ReadReg(LC709_REG_CELL_TEMP, &rsoc2);
+        LC709ReadReg(LC709_REG_ID, &rsoc2);
         nrf_delay_ms(1000);
     }
 }

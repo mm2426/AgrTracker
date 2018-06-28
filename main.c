@@ -87,9 +87,10 @@ void LfclkConfig(void);
  */
 void RTCInit(void);
 
-/** @brief Function to initialize Lora RX interrupt
+/** @brief Function to initialize User switch and charge indication IRQs. 
  */
 void SWIrqInit(void);
+void ChgIndIrqInit(void);
 
 /** @brief Function to initialize TWI Master
  */
@@ -539,6 +540,10 @@ int main(void)
         
         /* Sleep condition, add && ((!slTxComp) && (!slRxComp)) if required */
         sleepCondition = (swUsrState==SW_RELEASED) && (slCommState == SL_READY);
+        
+        /* Display bat chg indication if device is in offline mode. */
+        if(deviceMode == DEV_MODE_OFFLINE)
+            DispChgState();
 
         /* Enter Low Power Mode */
         if(sleepCondition)
@@ -585,9 +590,9 @@ void InitPeripherals(void)
     RTCInit();
     ll_uart_init();
     SWIrqInit();
+    ChgIndIrqInit();
     TWIM1Init();
     SPIM0Init();
-    
     /* Initialize Battery Gauge */
     LC709Init();
     
@@ -682,6 +687,22 @@ void SWIrqInit(void)
     APP_ERROR_CHECK(err_code);
 
     nrf_drv_gpiote_in_event_enable(SW_USR_PIN, true);
+}
+
+void ChgIndIrqInit(void)
+{
+    uint32_t err_code;
+
+    nrf_drv_gpiote_in_config_t config =  GPIOTE_CONFIG_IN_SENSE_TOGGLE(true);
+    
+    /* GPIOTE Module already enabled in SWIRQInit() function */
+    err_code = nrf_drv_gpiote_in_init(PGOOD_PIN, &config, SWIrqHandler);
+    APP_ERROR_CHECK(err_code);
+    nrf_drv_gpiote_in_event_enable(PGOOD_PIN, true);
+
+    err_code = nrf_drv_gpiote_in_init(NCHG_PIN, &config, SWIrqHandler);
+    APP_ERROR_CHECK(err_code);
+    nrf_drv_gpiote_in_event_enable(NCHG_PIN, true);
 }
 
 void TWIM1Init(void)
