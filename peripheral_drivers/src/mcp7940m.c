@@ -11,6 +11,8 @@ void MCP79GetTime(uint8_t *recvTime)
     nrf_drv_twi_tx(&twim, ADDR_MCP7940M, buff, 1, 1);
     /* Read Time */
     nrf_drv_twi_rx(&twim, ADDR_MCP7940M, buff, 3);
+    /* Mask the Oscillator enabled bit. */
+    buff[0] = buff[0] & 0x7F;
 }
 
 void MCP79SetTime(uint8_t *time)
