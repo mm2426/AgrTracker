@@ -269,6 +269,8 @@ int main(void)
                 if(appData.gpsPkt.status&0x01)
                 {
                     gpsValid = 1;
+                    /* Copy last valid gps record to be stored in memory */
+                    memcpy(&memHeader.memGps, &appData.gpsPkt, sizeof(gps_pkt_t));
                 }
                 else
                 {
@@ -314,6 +316,8 @@ int main(void)
                         slBuffer[2] = (sizeof(appData) - 2) + 1;
                         /* Number of Records */
                         slBuffer[3] = 1;
+                        /* Indicate that its a live point */
+                        appData.gpsPkt.status |= (1<<5);
                         /* Exclude header and footer from app data while copying */
                         memcpy(&slBuffer[4], &appData.batV, sizeof(appData) - 2);
                         slBuffer[22] = CalcChkSum(slBuffer, 22);
@@ -327,7 +331,7 @@ int main(void)
                         /* Payload Length */
                         slBuffer[2] = 1;
                         /* Hard-coded byte to indicate no GPS */
-                        slBuffer[3] = 0xFF;
+                        slBuffer[3] = 0x23;
                         slBuffer[4] = CalcChkSum(slBuffer, 4);
                         slTxLen = 5;
                     }
@@ -394,6 +398,7 @@ int main(void)
             sendTime = 0;
         }
         
+        /* If response to be sent for any incoming msgs */
         if(slRespLen&&(slCommState == SL_READY))
         {
             ll_message_send_ack(slRespBuff, slRespLen);
@@ -419,6 +424,8 @@ int main(void)
                 {
                     appData.header = APP_PKT_HDR;
                     appData.footer = APP_PKT_FTR;
+                    /* Clear live point indication flag */
+                    appData.gpsPkt.status = (appData.gpsPkt.status&0xDF);
                     NVMAddRec(&appData, 0);
                 }
                 memFlag = 0;
@@ -892,6 +899,7 @@ void SlProcessComm(void)
                 }
                 else 
                 {
+                    txErrCnt++;
                     //state == LL_STATE_ERROR or NaN. Reset the module.
                     /* Notify the application that tx failed. */
                     slTxComp = 2;
@@ -900,6 +908,7 @@ void SlProcessComm(void)
             }
             else
             {
+                txErrCnt++;
                 /* Notify the application that tx failed. */
                 slTxComp = 2;
                 slCommState = SL_ERROR;
@@ -930,6 +939,7 @@ void SlProcessComm(void)
                 }
                 else //state error
                 {
+                    rxErrCnt++;
                     /* Indicate Rx Failure */
                     slRxComp = 2;
                     slCommState = SL_ERROR;
@@ -937,6 +947,7 @@ void SlProcessComm(void)
             }
             else
             {
+                rxErrCnt++;
                 /* Indicate Rx Failure */
                 slRxComp = 2;
                 slCommState = SL_ERROR;
@@ -958,6 +969,12 @@ void SlProcessComm(void)
             nrf_drv_rtc_cc_set(&rtc2, 0, 5000,true);
             nrf_rtc_task_trigger(rtc2.p_reg, NRF_RTC_TASK_START);
             break;
+    }
+    if((txErrCnt > 5) || (rxErrCnt >5))
+    {
+        slCommState = SL_ERROR;
+        txErrCnt = 0;
+        rxErrCnt = 0;
     }
 }
 
@@ -1067,16 +1084,16 @@ void ParseLoraRxPkt(uint8_t *rxBuff, uint8_t rxDataLen, uint8_t *respBuff, uint8
                             respBuff[buffIndex++] = !nrf_gpio_pin_read(NCHG_PIN);
                         }
 
-                        /* If Last GPS data valid */
-                        if(appData.gpsPkt.status&0x01)
+                        /* If Memory header has last GPS data valid */
+                        if(memHeader.memGps.status&0x01)
                         {
-                            memcpy(&respBuff[buffIndex], &appData.gpsPkt, sizeof(gps_pkt_t));
+                            memcpy(&respBuff[buffIndex], &memHeader.memGps, sizeof(gps_pkt_t));
                             buffIndex += sizeof(gps_pkt_t);
                         }
                         else
                         {
                             /* Indicates GPS data invalid */
-                            respBuff[buffIndex++] = 0xFF;
+                            respBuff[buffIndex++] = 0x23;
                         }
                         
                         /* Copy nRecs from mem buffer */
@@ -1187,7 +1204,7 @@ void ParseLoraRxPkt(uint8_t *rxBuff, uint8_t rxDataLen, uint8_t *respBuff, uint8
                                 else
                                 {
                                     /* Indicates GPS data invalid */
-                                    respBuff[buffIndex++] = 0xFF;
+                                    respBuff[buffIndex++] = 0x23;
                                 }
                                 /* set appropriate data len here */
                                 respBuff[2] = buffIndex - 3;

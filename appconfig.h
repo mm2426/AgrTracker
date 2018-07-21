@@ -57,6 +57,7 @@
         uint32_t  memBaseAddr, rPtr, wPtr, nRecs;
         uint8_t updateFreq, retryCount, accelRange;
         uint16_t accelTh;
+        gps_pkt_t memGps;
     }__attribute__((packed));
     typedef struct memhdr_t memhdr_t;
 
