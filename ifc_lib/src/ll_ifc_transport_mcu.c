@@ -7,7 +7,7 @@
 #include "ll_ifc.h"
 
 // Debug switch - printf's every byte Tx'd and Rx'd (to stdout)
-// #define DEBUG_PRINT_EVERY_BYTE_TX_RX
+//#define DEBUG_PRINT_EVERY_BYTE_TX_RX
 
 #define RX_BUFF_SIZE    200
 #define RX_TIMEOUT_MS   50
@@ -28,6 +28,7 @@ void ppi_init(void)
     uint32_t err_code = NRF_SUCCESS;
 
     err_code = nrf_drv_ppi_init();
+    
     APP_ERROR_CHECK(err_code);
 
     err_code = nrf_drv_gpiote_init();

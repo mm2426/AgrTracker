@@ -194,7 +194,7 @@ int main(void)
     
     /* Configure board. */
     InitPeripherals();
-
+  
     /* Start 10 sec RTC */
     nrf_rtc_task_trigger(rtc1.p_reg, NRF_RTC_TASK_START);
 
